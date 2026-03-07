@@ -18,10 +18,10 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-20250514"
     # Per-stage model overrides (Haiku for bulk, Sonnet for generation, Opus for critique)
     model_stage_a: str = "claude-haiku-4-5-20251001"   # concept extraction — high volume, simple
-    model_stage_b: str = "claude-sonnet-4-20250514"    # concept merge — synthesis
+    model_stage_b: str = "claude-haiku-4-5-20251001"   # concept merge — structured comparison
     model_stage_c: str = "claude-sonnet-4-20250514"    # card planning — pedagogical judgment
     model_stage_d: str = "claude-sonnet-4-20250514"    # card generation — structured writing
-    model_stage_e: str = "claude-opus-4-20250514"      # critique — quality gate, nuanced evaluation
+    model_stage_e: str = "claude-sonnet-4-20250514"    # critique — rubric-based review
     model_stage_f: str = "claude-haiku-4-5-20251001"   # dedup — simple comparison
 
     # Storage
