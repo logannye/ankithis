@@ -1,4 +1,4 @@
-"""Pipeline orchestrator: runs stages A→B→C→D sequentially for a document."""
+"""Pipeline orchestrator: runs stages A→B→C→D→E→F→QC for a document."""
 
 from __future__ import annotations
 
@@ -11,18 +11,28 @@ from sqlalchemy.orm import selectinload
 
 from ankithis_api.models.card import Card
 from ankithis_api.models.document import Chunk, Document, Section
-from ankithis_api.models.enums import CardStyle, CardType, DeckSize, DocumentStatus, JobStatus
+from ankithis_api.models.enums import (
+    CardStyle,
+    CardType,
+    CritiqueVerdict,
+    DeckSize,
+    DocumentStatus,
+    JobStatus,
+)
 from ankithis_api.models.generation import CardPlan, Concept, GenerationJob
+from ankithis_api.services.qc import run_qc
 from ankithis_api.services.stages.card_generation import generate_cards
 from ankithis_api.services.stages.card_planning import plan_cards
 from ankithis_api.services.stages.concept_extraction import extract_concepts
 from ankithis_api.services.stages.concept_merge import merge_concepts
+from ankithis_api.services.stages.critique import apply_critique, critique_cards
+from ankithis_api.services.stages.dedup import apply_dedup, find_duplicate_pairs, resolve_duplicates
 
 logger = logging.getLogger(__name__)
 
 
 async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSession) -> None:
-    """Run the full A→B→C→D pipeline for a document."""
+    """Run the full A→B→C→D→E→F→QC pipeline for a document."""
     # Load document with sections and chunks
     result = await db.execute(
         select(Document)
@@ -79,7 +89,7 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
         await _update_job(db, job, JobStatus.STAGE_C)
         card_plans = plan_cards(merged_concepts_all, deck_size, card_style, study_goal)
 
-        # Persist card plans (look up concept IDs)
+        # Persist card plans
         concept_id_map = {}
         concepts_result = await db.execute(
             select(Concept).where(Concept.document_id == doc.id)
@@ -103,7 +113,6 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
         # Stage D: Card Generation
         await _update_job(db, job, JobStatus.STAGE_D)
 
-        # Gather source text for context
         source_text = "\n\n".join(
             chunk.text
             for section in doc.sections
@@ -112,13 +121,40 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
 
         generated = generate_cards(card_plans, source_text, study_goal)
 
+        # Stage E: Critique
+        await _update_job(db, job, JobStatus.STAGE_E)
+        reviews = critique_cards(generated, source_text)
+        generated = apply_critique(generated, reviews)
+
+        # Stage F: Dedup
+        await _update_job(db, job, JobStatus.STAGE_F)
+        dup_pairs = find_duplicate_pairs(generated)
+        if dup_pairs:
+            decisions = resolve_duplicates(generated, dup_pairs)
+            generated = apply_dedup(generated, dup_pairs, decisions)
+
+        # QC
+        await _update_job(db, job, JobStatus.QC)
+        generated = run_qc(generated)
+
         # Persist cards
+        suppressed_count = 0
         for i, card_data in enumerate(generated):
             card_type = CardType.CLOZE if card_data["card_type"] == "cloze" else CardType.BASIC
-            # Try to map back to section via concept
-            section_id = concept_to_section.get(
-                _find_plan_concept(card_plans, i)
-            )
+            section_id = concept_to_section.get(_find_plan_concept(card_plans, i))
+            is_suppressed = card_data.get("suppressed", False)
+            if is_suppressed:
+                suppressed_count += 1
+
+            # Map critique verdict
+            verdict_str = card_data.get("critique_verdict")
+            critique_verdict = None
+            if verdict_str:
+                try:
+                    critique_verdict = CritiqueVerdict(verdict_str)
+                except ValueError:
+                    pass
+
             db.add(Card(
                 document_id=doc.id,
                 section_id=section_id,
@@ -126,6 +162,8 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
                 front=card_data["front"],
                 back=card_data["back"],
                 tags=card_data.get("tags", ""),
+                critique_verdict=critique_verdict,
+                suppressed=is_suppressed,
                 sort_order=i,
             ))
 
@@ -133,6 +171,7 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
         doc.status = DocumentStatus.COMPLETED
         job.status = JobStatus.COMPLETED
         job.total_cards = len(generated)
+        job.suppressed_cards = suppressed_count
         await db.commit()
 
     except Exception as e:

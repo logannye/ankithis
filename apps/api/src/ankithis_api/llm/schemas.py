@@ -53,6 +53,31 @@ class CardGenerationOutput(BaseModel):
     cards: list[GeneratedCard] = Field(description="Generated flashcards")
 
 
+# Stage E: Critique
+class CritiqueResult(BaseModel):
+    card_index: int = Field(description="Index of the card being reviewed (0-based)")
+    verdict: str = Field(description="'pass', 'rewrite', or 'suppress'")
+    front: str = Field(default="", description="Corrected front text (only for rewrite)")
+    back: str = Field(default="", description="Corrected back text (only for rewrite)")
+    reason: str = Field(default="", description="Brief reason for the verdict")
+
+
+class CritiqueOutput(BaseModel):
+    reviews: list[CritiqueResult] = Field(description="Review results for each card")
+
+
+# Stage F: Deduplication
+class DedupResult(BaseModel):
+    pair_index: int = Field(description="Index of the pair being reviewed (0-based)")
+    action: str = Field(description="'keep_first', 'keep_second', 'keep_both', or 'merge'")
+    merged_front: str = Field(default="", description="Merged front text (only for merge action)")
+    merged_back: str = Field(default="", description="Merged back text (only for merge action)")
+
+
+class DedupOutput(BaseModel):
+    results: list[DedupResult] = Field(description="Dedup decisions for each pair")
+
+
 def schema_for(model: type[BaseModel]) -> dict:
     """Convert a Pydantic model to a JSON Schema dict for tool_use."""
     return model.model_json_schema()
