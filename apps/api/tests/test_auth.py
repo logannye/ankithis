@@ -1,5 +1,7 @@
 """Tests for JWT auth: password hashing, token creation/verification."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 from ankithis_api.auth import (
@@ -64,10 +66,66 @@ class TestJWT:
 
 
 class TestAuthEndpoints:
-    def test_register(self, client):
-        resp = client.post(
+    """Auth endpoint tests using a mock DB session.
+
+    We mock the DB to avoid asyncpg event loop conflicts with TestClient.
+    """
+
+    @pytest.fixture(autouse=True)
+    def setup_mock_db(self, client):
+        """Override get_db with a mock that stores users in-memory."""
+        from ankithis_api.app import app
+        from ankithis_api.db import get_db
+        from ankithis_api.models.user import User
+
+        self._users: dict[str, User] = {}
+        self._client = client
+
+        mock_session = AsyncMock()
+
+        # Mock execute to return users from in-memory store
+        def make_execute(session):
+            async def execute(stmt):
+                result = MagicMock()
+                # Extract email from the compiled query
+                email = None
+                if hasattr(stmt, "whereclause"):
+                    clause = stmt.whereclause
+                    if hasattr(clause, "right") and hasattr(clause.right, "value"):
+                        email = clause.right.value
+
+                if email and email in self._users:
+                    result.scalar_one_or_none.return_value = self._users[email]
+                else:
+                    result.scalar_one_or_none.return_value = None
+                return result
+
+            return execute
+
+        mock_session.execute = make_execute(mock_session)
+
+        # Mock add to store users
+        def mock_add(obj):
+            if isinstance(obj, User):
+                self._users[obj.email] = obj
+
+        mock_session.add = mock_add
+        mock_session.commit = AsyncMock()
+
+        async def override():
+            yield mock_session
+
+        app.dependency_overrides[get_db] = override
+        yield
+        app.dependency_overrides.pop(get_db, None)
+
+    def test_register(self):
+        resp = self._client.post(
             "/api/auth/register",
-            json={"email": "test@example.com", "password": "password123"},
+            json={
+                "email": "test@example.com",
+                "password": "password123",
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -75,60 +133,81 @@ class TestAuthEndpoints:
         assert data["email"] == "test@example.com"
         assert data["token_type"] == "bearer"
 
-    def test_register_short_password(self, client):
-        resp = client.post(
+    def test_register_short_password(self):
+        resp = self._client.post(
             "/api/auth/register",
             json={"email": "test2@example.com", "password": "short"},
         )
         assert resp.status_code == 422
 
-    def test_register_duplicate_email(self, client):
-        client.post(
+    def test_register_duplicate_email(self):
+        self._client.post(
             "/api/auth/register",
-            json={"email": "dup@example.com", "password": "password123"},
+            json={
+                "email": "dup@example.com",
+                "password": "password123",
+            },
         )
-        resp = client.post(
+        resp = self._client.post(
             "/api/auth/register",
-            json={"email": "dup@example.com", "password": "password456"},
+            json={
+                "email": "dup@example.com",
+                "password": "password456",
+            },
         )
         assert resp.status_code == 409
 
-    def test_login(self, client):
-        client.post(
+    def test_login(self):
+        self._client.post(
             "/api/auth/register",
-            json={"email": "login@example.com", "password": "password123"},
+            json={
+                "email": "login@example.com",
+                "password": "password123",
+            },
         )
-        resp = client.post(
+        resp = self._client.post(
             "/api/auth/login",
-            json={"email": "login@example.com", "password": "password123"},
+            json={
+                "email": "login@example.com",
+                "password": "password123",
+            },
         )
         assert resp.status_code == 200
         assert "access_token" in resp.json()
 
-    def test_login_wrong_password(self, client):
-        client.post(
+    def test_login_wrong_password(self):
+        self._client.post(
             "/api/auth/register",
-            json={"email": "wrong@example.com", "password": "password123"},
+            json={
+                "email": "wrong@example.com",
+                "password": "password123",
+            },
         )
-        resp = client.post(
+        resp = self._client.post(
             "/api/auth/login",
-            json={"email": "wrong@example.com", "password": "wrongpassword"},
+            json={
+                "email": "wrong@example.com",
+                "password": "wrongpassword",
+            },
         )
         assert resp.status_code == 401
 
-    def test_login_nonexistent(self, client):
-        resp = client.post(
+    def test_login_nonexistent(self):
+        resp = self._client.post(
             "/api/auth/login",
-            json={"email": "nobody@example.com", "password": "password123"},
+            json={
+                "email": "nobody@example.com",
+                "password": "password123",
+            },
         )
         assert resp.status_code == 401
 
-    def test_protected_endpoint_no_token(self, client):
-        resp = client.post("/api/upload")
+    def test_protected_endpoint_no_token(self):
+        resp = self._client.post("/api/upload")
         assert resp.status_code in (401, 422)
 
-    def test_protected_endpoint_invalid_token(self, client):
-        resp = client.post(
+    def test_protected_endpoint_invalid_token(self):
+        resp = self._client.post(
             "/api/upload",
             headers={"Authorization": "Bearer invalid-token"},
         )

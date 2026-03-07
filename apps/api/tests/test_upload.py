@@ -1,14 +1,24 @@
 """Tests for the upload endpoint using a mock DB."""
 
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from ankithis_api.app import app
+from ankithis_api.auth import get_current_user
 from ankithis_api.db import get_db
+from ankithis_api.models.user import User
 
 client = TestClient(app)
+
+_FAKE_USER = User(
+    id=uuid.uuid4(),
+    email="test@example.com",
+    hashed_password="fake",
+    display_name=None,
+)
 
 
 def _mock_db_session():
@@ -18,7 +28,19 @@ def _mock_db_session():
     return session
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture(autouse=True)
+def override_auth():
+    """Override auth dependency so upload tests don't need tokens."""
+
+    async def fake_user():
+        return _FAKE_USER
+
+    app.dependency_overrides[get_current_user] = fake_user
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture()
 def mock_db():
     session = _mock_db_session()
 
@@ -27,7 +49,7 @@ def mock_db():
 
     app.dependency_overrides[get_db] = override
     yield session
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_db, None)
 
 
 def test_upload_unsupported_type():
