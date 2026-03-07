@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ankithis
+      POSTGRES_PASSWORD: ankithis
+      POSTGRES_DB: ankithis
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ankithis"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./apps/api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app
+      - api-data:/app/data
+    environment:
+      ANKITHIS_DATABASE_URL: postgresql+asyncpg://ankithis:ankithis@postgres:5432/ankithis
+      ANKITHIS_REDIS_URL: redis://redis:6379/0
+      ANKITHIS_ANTHROPIC_API_KEY: ${ANKITHIS_ANTHROPIC_API_KEY:-}
+      ANKITHIS_STORAGE_LOCAL_PATH: /app/data/uploads
+      ANKITHIS_CORS_ORIGINS: '["http://localhost:3000"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./apps/api
+    command: celery -A ankithis_api.worker worker --loglevel=info --concurrency=2
+    volumes:
+      - ./apps/api:/app
+      - api-data:/app/data
+    environment:
+      ANKITHIS_DATABASE_URL: postgresql+asyncpg://ankithis:ankithis@postgres:5432/ankithis
+      ANKITHIS_REDIS_URL: redis://redis:6379/0
+      ANKITHIS_ANTHROPIC_API_KEY: ${ANKITHIS_ANTHROPIC_API_KEY:-}
+      ANKITHIS_STORAGE_LOCAL_PATH: /app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  api-data:

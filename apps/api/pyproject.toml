@@ -3,10 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ankithis"
+name = "ankithis-api"
 version = "0.1.0"
-description = "Extract core principles from PDFs and generate high-quality Anki cloze flashcard decks"
-readme = "README.md"
+description = "AnkiThis API — convert documents into high-quality Anki flashcard decks"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
@@ -16,14 +15,26 @@ dependencies = [
     "pdfplumber>=0.11",
     "genanki>=0.13",
     "anthropic>=0.52",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic-settings>=2.6",
+    "celery[redis]>=5.4",
+    "redis>=5.0",
+    "python-docx>=1.1",
+    "boto3>=1.35",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-asyncio>=0.24",
     "ruff>=0.8",
     "httpx>=0.28",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ankithis_api"]
 
 [tool.ruff]
 line-length = 100
@@ -34,3 +45,4 @@ select = ["E", "F", "I", "N", "W"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
