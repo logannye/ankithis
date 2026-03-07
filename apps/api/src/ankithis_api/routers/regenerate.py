@@ -8,11 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ankithis_api.auth import get_current_user
+from ankithis_api.config import settings
 from ankithis_api.db import get_db
 from ankithis_api.models.card import Card
 from ankithis_api.models.document import Document
 from ankithis_api.models.enums import DocumentStatus, JobStatus
 from ankithis_api.models.generation import CardPlan, Concept, GenerationJob
+from ankithis_api.models.user import User
+from ankithis_api.rate_limit import check_rate_limit
 from ankithis_api.schemas.generation import GenerateResponse
 from ankithis_api.tasks.generation import generate_cards_task
 
@@ -23,13 +27,18 @@ router = APIRouter()
 async def regenerate_cards(
     document_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """Re-run the generation pipeline for a document.
 
     Reuses existing sections and chunks (parsed content).
     Soft-deletes old cards, concepts, and card plans.
     """
-    result = await db.execute(select(Document).where(Document.id == document_id))
+    check_rate_limit(str(user.id), "generation", settings.rate_limit_generations)
+
+    result = await db.execute(
+        select(Document).where(Document.id == document_id, Document.user_id == user.id)
+    )
     doc = result.scalar_one_or_none()
 
     if not doc:

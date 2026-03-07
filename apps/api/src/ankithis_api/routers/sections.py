@@ -9,9 +9,11 @@ from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ankithis_api.auth import get_current_user
 from ankithis_api.db import get_db
 from ankithis_api.models.card import Card
-from ankithis_api.models.document import Section
+from ankithis_api.models.document import Document, Section
+from ankithis_api.models.user import User
 
 router = APIRouter()
 
@@ -25,10 +27,18 @@ class SectionRemoveResponse(BaseModel):
 async def remove_section_from_deck(
     section_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(Section).where(Section.id == section_id))
     section = result.scalar_one_or_none()
     if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+
+    # Verify ownership through document
+    doc_result = await db.execute(
+        select(Document).where(Document.id == section.document_id, Document.user_id == user.id)
+    )
+    if not doc_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Section not found")
 
     # Suppress all cards in this section

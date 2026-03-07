@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,11 +20,11 @@ class Card(Base, UUIDMixin, TimestampMixin):
     card_plan_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("card_plans.id", ondelete="SET NULL")
     )
-    card_type: Mapped[CardType] = mapped_column(nullable=False)
+    card_type: Mapped[CardType] = mapped_column(Enum(CardType, native_enum=False, length=16), nullable=False)
     front: Mapped[str] = mapped_column(Text, nullable=False)
     back: Mapped[str] = mapped_column(Text, nullable=False)
     tags: Mapped[str | None] = mapped_column(String(1024))  # comma-separated
-    critique_verdict: Mapped[CritiqueVerdict | None] = mapped_column()
+    critique_verdict: Mapped[CritiqueVerdict | None] = mapped_column(Enum(CritiqueVerdict, native_enum=False, length=16))
     suppressed: Mapped[bool] = mapped_column(default=False, nullable=False)
     duplicate_of: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

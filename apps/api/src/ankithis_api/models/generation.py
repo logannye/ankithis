@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,7 +14,7 @@ class GenerationJob(Base, UUIDMixin, TimestampMixin):
     document_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )
-    status: Mapped[JobStatus] = mapped_column(default=JobStatus.PENDING, nullable=False)
+    status: Mapped[JobStatus] = mapped_column(Enum(JobStatus, native_enum=False, length=32), default=JobStatus.PENDING, nullable=False)
     current_stage: Mapped[str | None] = mapped_column(String(64))
     error_message: Mapped[str | None] = mapped_column(Text)
     total_cards: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

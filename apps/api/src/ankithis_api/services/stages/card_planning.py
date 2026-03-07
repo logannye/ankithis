@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
+from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.prompts.stage_c import SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import CardPlanOutput, schema_for
@@ -51,6 +52,7 @@ def plan_cards(
         user=user,
         tool_name="plan_cards",
         tool_schema=schema_for(CardPlanOutput),
+        model=settings.model_stage_c,
     )
     output = CardPlanOutput.model_validate(result)
     return [c.model_dump() for c in output.cards]

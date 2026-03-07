@@ -79,7 +79,7 @@ def export_apkg(cards: list[dict], deck_name: str = "AnkiThis Deck") -> bytes:
         if card.get("suppressed"):
             continue
 
-        tags = [t.strip() for t in card.get("tags", "").split(",") if t.strip()]
+        tags = [t.strip().replace(" ", "_") for t in card.get("tags", "").split(",") if t.strip()]
 
         if card.get("card_type") == "cloze":
             note = genanki.Note(

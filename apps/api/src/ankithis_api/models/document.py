@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,12 +11,15 @@ from ankithis_api.models.enums import CardStyle, DeckSize, DocumentStatus, FileT
 class Document(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "documents"
 
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    file_type: Mapped[FileType] = mapped_column(nullable=False)
+    file_type: Mapped[FileType] = mapped_column(Enum(FileType, native_enum=False, length=16), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_path: Mapped[str] = mapped_column(String(1024), nullable=False)
     status: Mapped[DocumentStatus] = mapped_column(
-        default=DocumentStatus.UPLOADED, nullable=False
+        Enum(DocumentStatus, native_enum=False, length=32), default=DocumentStatus.UPLOADED, nullable=False
     )
     title: Mapped[str | None] = mapped_column(String(512))
     page_count: Mapped[int | None] = mapped_column(Integer)
@@ -38,8 +41,8 @@ class DocumentOptions(Base, UUIDMixin, TimestampMixin):
         unique=True, nullable=False,
     )
     study_goal: Mapped[str | None] = mapped_column(Text)
-    card_style: Mapped[CardStyle] = mapped_column(default=CardStyle.CLOZE_HEAVY, nullable=False)
-    deck_size: Mapped[DeckSize] = mapped_column(default=DeckSize.MEDIUM, nullable=False)
+    card_style: Mapped[CardStyle] = mapped_column(Enum(CardStyle, native_enum=False, length=32), default=CardStyle.CLOZE_HEAVY, nullable=False)
+    deck_size: Mapped[DeckSize] = mapped_column(Enum(DeckSize, native_enum=False, length=32), default=DeckSize.MEDIUM, nullable=False)
     scope: Mapped[str | None] = mapped_column(Text)  # "focus on chapters 3-5"
 
     document: Mapped["Document"] = relationship(back_populates="options")

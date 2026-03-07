@@ -8,9 +8,12 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ankithis_api.auth import get_current_user
 from ankithis_api.config import settings
 from ankithis_api.db import get_db
 from ankithis_api.models.document import Chunk, Document, DocumentOptions, Section
+from ankithis_api.models.user import User
+from ankithis_api.rate_limit import check_rate_limit
 from ankithis_api.models.enums import CardStyle, DeckSize, DocumentStatus, FileType
 from ankithis_api.schemas.upload import UploadResponse
 from ankithis_api.services.chunker import chunk_section
@@ -30,7 +33,9 @@ async def upload_document(
     deck_size: DeckSize = Form(DeckSize.MEDIUM),
     scope: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
+    check_rate_limit(str(user.id), "upload", settings.rate_limit_uploads)
     # Validate file type
     ext = Path(file.filename or "").suffix.lower()
     file_type = ALLOWED_EXTENSIONS.get(ext)
@@ -68,6 +73,7 @@ async def upload_document(
     # Create Document record
     doc = Document(
         id=uuid.uuid4(),
+        user_id=user.id,
         filename=file.filename or "upload",
         file_type=file_type,
         file_size=len(content),

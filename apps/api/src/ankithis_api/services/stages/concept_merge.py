@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
+from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.prompts.stage_b import SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import ConceptMergeOutput, schema_for
@@ -31,6 +32,7 @@ def merge_concepts(
         user=user,
         tool_name="merge_concepts",
         tool_schema=schema_for(ConceptMergeOutput),
+        model=settings.model_stage_b,
     )
     output = ConceptMergeOutput.model_validate(result)
     return [c.model_dump() for c in output.concepts]

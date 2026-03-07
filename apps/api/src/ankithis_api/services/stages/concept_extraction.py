@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.prompts.stage_a import SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import ConceptExtractionOutput, schema_for
@@ -22,6 +23,7 @@ def extract_concepts(
         user=user,
         tool_name="extract_concepts",
         tool_schema=schema_for(ConceptExtractionOutput),
+        model=settings.model_stage_a,
     )
     output = ConceptExtractionOutput.model_validate(result)
     return [c.model_dump() for c in output.concepts]

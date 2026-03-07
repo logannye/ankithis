@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
+from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.prompts.stage_e import SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import CritiqueOutput, schema_for
@@ -46,6 +47,7 @@ def critique_cards(
             user=user,
             tool_name="critique_cards",
             tool_schema=schema_for(CritiqueOutput),
+            model=settings.model_stage_e,
         )
         output = CritiqueOutput.model_validate(result)
 

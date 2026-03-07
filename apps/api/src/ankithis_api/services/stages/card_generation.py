@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
+from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.prompts.stage_d import SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import CardGenerationOutput, schema_for
@@ -41,6 +42,7 @@ def generate_cards(
             user=user,
             tool_name="generate_cards",
             tool_schema=schema_for(CardGenerationOutput),
+            model=settings.model_stage_d,
         )
         output = CardGenerationOutput.model_validate(result)
         all_cards.extend(c.model_dump() for c in output.cards)

@@ -36,6 +36,7 @@ services:
       ANKITHIS_DATABASE_URL: postgresql+asyncpg://ankithis:ankithis@postgres:5432/ankithis
       ANKITHIS_REDIS_URL: redis://redis:6379/0
       ANKITHIS_ANTHROPIC_API_KEY: ${ANKITHIS_ANTHROPIC_API_KEY:-}
+      ANKITHIS_JWT_SECRET: ${ANKITHIS_JWT_SECRET:-change-me-in-production}
       ANKITHIS_STORAGE_LOCAL_PATH: /app/data/uploads
       ANKITHIS_CORS_ORIGINS: '["http://localhost:3000","http://localhost:3002"]'
     depends_on:

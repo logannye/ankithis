@@ -7,6 +7,7 @@ import logging
 import re
 from collections import Counter
 
+from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.prompts.stage_f import SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import DedupOutput, schema_for
@@ -76,6 +77,7 @@ def resolve_duplicates(
         user=user,
         tool_name="resolve_duplicates",
         tool_schema=schema_for(DedupOutput),
+        model=settings.model_stage_f,
     )
     output = DedupOutput.model_validate(result)
     return [r.model_dump() for r in output.results]

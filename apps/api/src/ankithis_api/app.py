@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ankithis_api.config import settings
+from ankithis_api.middleware import add_middleware, setup_logging
 from ankithis_api.routers import (
+    auth,
     cards,
     export,
     generate,
@@ -13,6 +15,8 @@ from ankithis_api.routers import (
     sections,
     upload,
 )
+
+setup_logging()
 
 app = FastAPI(
     title="AnkiThis",
@@ -28,7 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+add_middleware(app)
+
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(upload.router)
 app.include_router(generate.router)
 app.include_router(jobs.router)

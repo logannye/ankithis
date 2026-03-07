@@ -24,5 +24,5 @@ celery_app.conf.update(
     worker_concurrency=2,
 )
 
-# Auto-discover tasks in ankithis_api.tasks package
-celery_app.autodiscover_tasks(["ankithis_api.tasks"])
+# Auto-discover tasks — looks for 'tasks' submodule in each listed package
+celery_app.autodiscover_tasks(["ankithis_api"])
