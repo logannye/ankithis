@@ -11,7 +11,7 @@ AnkiThis runs a six-stage pipeline designed to produce cards of pedagogical valu
 1. **Parse & Structure** — Extracts text from your document, detects section boundaries, and splits content into manageable chunks.
 2. **Concept Extraction** — An LLM identifies key concepts, definitions, mechanisms, and relationships in each chunk.
 3. **Concept Merge** — Duplicate and overlapping concepts are merged across sections. Concepts are ranked by importance.
-4. **Card Planning** — The system decides which concepts deserve cards, what card type to use (cloze vs. Q&A), and how many cards to generate based on your preferences.
+4. **Card Planning** — The system decides which concepts deserve cards, what card type to use (cloze vs. Q&A), and how many cards to generate — scaled proportionally to document length.
 5. **Card Generation** — High-quality flashcards are generated with precise cloze deletions (1–4 word blanks) and clear Q&A pairs.
 6. **Quality Control** — A critique pass rewrites weak cards, deduplicates near-identical ones, and suppresses anything that doesn't meet the quality bar.
 
@@ -30,10 +30,11 @@ The result is a compact, curated deck — not a bloated dump of every sentence i
 
 | Option | Values | Description |
 |--------|--------|-------------|
-| Study Goal | `exam_essentials`, `balanced_mastery`, `comprehensive` | How much material to cover |
-| Card Style | `mostly_cloze`, `mixed`, `mostly_qa` | Preferred card format |
-| Deck Size | `small`, `medium`, `large` | Target number of cards |
-| Scope | `full_document`, `selected_pages` | Process entire file or a page range |
+| Study Goal | Free text (optional) | e.g. "Prepare for organic chemistry midterm" |
+| Card Style | `cloze_heavy`, `qa_heavy`, `balanced` | Preferred card format |
+| Deck Size | `small`, `medium`, `large` | Card density — scales with document length |
+
+Deck size uses adaptive density rather than fixed card counts. A short 5-page PDF on "Fewer" produces ~8 cards, while a 30-page chapter on "Balanced" produces ~108. Floor: 5 cards, ceiling: 300.
 
 ## Tech Stack
 
@@ -75,6 +76,8 @@ The API will be available at `http://localhost:8000` and the web UI at `http://l
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| `POST` | `/api/auth/register` | Create an account |
+| `POST` | `/api/auth/login` | Sign in and get a token |
 | `POST` | `/api/upload` | Upload a document |
 | `POST` | `/api/documents/{id}/generate` | Start card generation |
 | `GET` | `/api/jobs/{id}` | Poll generation progress |
@@ -83,6 +86,8 @@ The API will be available at `http://localhost:8000` and the web UI at `http://l
 | `POST` | `/api/documents/{id}/regenerate` | Regenerate with new settings |
 | `GET` | `/api/documents/{id}/export/apkg` | Download Anki package |
 | `GET` | `/api/documents/{id}/export/csv` | Download CSV |
+
+All endpoints except auth require a Bearer token in the `Authorization` header.
 
 Interactive API docs are available at `http://localhost:8000/docs`.
 
