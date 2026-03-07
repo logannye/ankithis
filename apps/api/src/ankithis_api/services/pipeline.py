@@ -87,7 +87,12 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
 
         # Stage C: Card Planning
         await _update_job(db, job, JobStatus.STAGE_C)
-        card_plans = plan_cards(merged_concepts_all, deck_size, card_style, study_goal)
+        total_words = sum(
+            chunk.word_count
+            for section in doc.sections
+            for chunk in section.chunks
+        )
+        card_plans = plan_cards(merged_concepts_all, deck_size, card_style, study_goal, total_words)
 
         # Persist card plans
         concept_id_map = {}

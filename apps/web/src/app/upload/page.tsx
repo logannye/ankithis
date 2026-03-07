@@ -235,9 +235,9 @@ export default function UploadPage() {
                   <div className="grid grid-cols-3 gap-3">
                     {(
                       [
-                        ["small", "Small", "30–50 cards"],
-                        ["medium", "Medium", "80–150 cards"],
-                        ["large", "Large", "200–300 cards"],
+                        ["small", "Fewer", "Key concepts only"],
+                        ["medium", "Balanced", "Solid coverage"],
+                        ["large", "More", "Deep, thorough coverage"],
                       ] as const
                     ).map(([value, label, desc]) => (
                       <button
