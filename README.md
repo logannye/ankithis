@@ -6,7 +6,7 @@ AnkiThis uses a multi-pass AI pipeline to read your documents, identify the most
 
 ## How It Works
 
-AnkiThis doesn't just extract text and slap it onto flashcards. It runs a six-stage pipeline designed to produce cards you'd actually want to study:
+AnkiThis runs a six-stage pipeline designed to produce cards of pedagogical value that you'd actually want to study:
 
 1. **Parse & Structure** — Extracts text from your document, detects section boundaries, and splits content into manageable chunks.
 2. **Concept Extraction** — An LLM identifies key concepts, definitions, mechanisms, and relationships in each chunk.
