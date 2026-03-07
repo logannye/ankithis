@@ -37,7 +37,7 @@ services:
       ANKITHIS_REDIS_URL: redis://redis:6379/0
       ANKITHIS_ANTHROPIC_API_KEY: ${ANKITHIS_ANTHROPIC_API_KEY:-}
       ANKITHIS_STORAGE_LOCAL_PATH: /app/data/uploads
-      ANKITHIS_CORS_ORIGINS: '["http://localhost:3000"]'
+      ANKITHIS_CORS_ORIGINS: '["http://localhost:3000","http://localhost:3002"]'
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +46,7 @@ services:
 
   worker:
     build: ./apps/api
-    command: celery -A ankithis_api.worker worker --loglevel=info --concurrency=2
+    command: celery -A ankithis_api.worker:celery_app worker --loglevel=info --concurrency=2 --prefetch-multiplier=1
     volumes:
       - ./apps/api:/app
       - api-data:/app/data

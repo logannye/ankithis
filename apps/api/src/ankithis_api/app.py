@@ -2,7 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ankithis_api.config import settings
-from ankithis_api.routers import cards, export, generate, health, jobs, review, sections, upload
+from ankithis_api.routers import (
+    cards,
+    export,
+    generate,
+    health,
+    jobs,
+    regenerate,
+    review,
+    sections,
+    upload,
+)
 
 app = FastAPI(
     title="AnkiThis",
@@ -26,3 +36,4 @@ app.include_router(export.router)
 app.include_router(review.router)
 app.include_router(cards.router)
 app.include_router(sections.router)
+app.include_router(regenerate.router)
