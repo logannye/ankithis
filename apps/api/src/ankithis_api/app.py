@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ankithis_api.config import settings
-from ankithis_api.routers import health
+from ankithis_api.routers import health, upload
 
 app = FastAPI(
     title="AnkiThis",
@@ -19,3 +19,4 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(upload.router)
