@@ -8,8 +8,18 @@ from ankithis_api.services.exporter import export_csv
 
 def test_export_csv_basic():
     cards = [
-        {"front": "What is ATP?", "back": "Adenosine triphosphate", "card_type": "basic", "tags": "biology"},
-        {"front": "{{c1::Mitochondria}} produce ATP.", "back": "", "card_type": "cloze", "tags": "biology,cell"},
+        {
+            "front": "What is ATP?",
+            "back": "Adenosine triphosphate",
+            "card_type": "basic",
+            "tags": "biology",
+        },
+        {
+            "front": "{{c1::Mitochondria}} produce ATP.",
+            "back": "",
+            "card_type": "cloze",
+            "tags": "biology,cell",
+        },
     ]
     result = export_csv(cards)
     assert isinstance(result, bytes)
@@ -24,7 +34,13 @@ def test_export_csv_basic():
 def test_export_csv_skips_suppressed():
     cards = [
         {"front": "Good card", "back": "Answer", "card_type": "basic", "tags": ""},
-        {"front": "Bad card", "back": "Answer", "card_type": "basic", "tags": "", "suppressed": True},
+        {
+            "front": "Bad card",
+            "back": "Answer",
+            "card_type": "basic",
+            "tags": "",
+            "suppressed": True,
+        },
     ]
     result = export_csv(cards)
     reader = csv.reader(io.StringIO(result.decode("utf-8")))
@@ -45,11 +61,22 @@ def test_export_apkg():
         from ankithis_api.services.exporter import export_apkg
     except ImportError:
         import pytest
+
         pytest.skip("genanki not installed")
 
     cards = [
-        {"front": "What is ATP?", "back": "Adenosine triphosphate", "card_type": "basic", "tags": "biology"},
-        {"front": "{{c1::Mitochondria}} produce ATP.", "back": "", "card_type": "cloze", "tags": "biology"},
+        {
+            "front": "What is ATP?",
+            "back": "Adenosine triphosphate",
+            "card_type": "basic",
+            "tags": "biology",
+        },
+        {
+            "front": "{{c1::Mitochondria}} produce ATP.",
+            "back": "",
+            "card_type": "cloze",
+            "tags": "biology",
+        },
     ]
     result = export_apkg(cards, deck_name="Test Deck")
     assert isinstance(result, bytes)
@@ -63,11 +90,23 @@ def test_export_apkg_skips_suppressed():
         from ankithis_api.services.exporter import export_apkg
     except ImportError:
         import pytest
+
         pytest.skip("genanki not installed")
 
     cards = [
-        {"front": "Good card question for testing", "back": "Answer", "card_type": "basic", "tags": ""},
-        {"front": "Bad card", "back": "Answer", "card_type": "basic", "tags": "", "suppressed": True},
+        {
+            "front": "Good card question for testing",
+            "back": "Answer",
+            "card_type": "basic",
+            "tags": "",
+        },
+        {
+            "front": "Bad card",
+            "back": "Answer",
+            "card_type": "basic",
+            "tags": "",
+            "suppressed": True,
+        },
     ]
     result = export_apkg(cards)
     assert isinstance(result, bytes)

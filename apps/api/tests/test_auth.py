@@ -1,7 +1,5 @@
 """Tests for JWT auth: password hashing, token creation/verification."""
 
-import time
-
 import pytest
 
 from ankithis_api.auth import (

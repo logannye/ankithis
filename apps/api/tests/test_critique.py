@@ -8,7 +8,13 @@ def test_critique_returns_verdicts(mock_call):
     mock_call.return_value = {
         "reviews": [
             {"card_index": 0, "verdict": "pass", "front": "", "back": "", "reason": ""},
-            {"card_index": 1, "verdict": "rewrite", "front": "Fixed front", "back": "Fixed back", "reason": "bad wording"},
+            {
+                "card_index": 1,
+                "verdict": "rewrite",
+                "front": "Fixed front",
+                "back": "Fixed back",
+                "reason": "bad wording",
+            },
             {"card_index": 2, "verdict": "suppress", "front": "", "back": "", "reason": "trivial"},
         ]
     }

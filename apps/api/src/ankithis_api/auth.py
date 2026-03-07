@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
-import base64
 import secrets
 import time
 import uuid
@@ -41,6 +41,7 @@ def verify_password(password: str, hashed: str) -> bool:
 
 # ---------- JWT (HS256, no external lib) ----------
 
+
 def _b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
@@ -53,12 +54,14 @@ def _b64url_decode(s: str) -> bytes:
 def create_access_token(user_id: str) -> str:
     header = _b64url_encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
     payload = _b64url_encode(
-        json.dumps({
-            "sub": user_id,
-            "exp": int(time.time()) + settings.jwt_expiry_seconds,
-            "iat": int(time.time()),
-            "jti": uuid.uuid4().hex,
-        }).encode()
+        json.dumps(
+            {
+                "sub": user_id,
+                "exp": int(time.time()) + settings.jwt_expiry_seconds,
+                "iat": int(time.time()),
+                "jti": uuid.uuid4().hex,
+            }
+        ).encode()
     )
     sig_input = f"{header}.{payload}".encode()
     sig = hmac.new(settings.jwt_secret.encode(), sig_input, hashlib.sha256).digest()
@@ -88,6 +91,7 @@ def decode_access_token(token: str) -> dict:
 
 
 # ---------- FastAPI dependency ----------
+
 
 async def get_current_user(
     creds: HTTPAuthorizationCredentials | None = Depends(_bearer),

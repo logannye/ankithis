@@ -15,11 +15,15 @@ class Document(Base, UUIDMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    file_type: Mapped[FileType] = mapped_column(Enum(FileType, native_enum=False, length=16), nullable=False)
+    file_type: Mapped[FileType] = mapped_column(
+        Enum(FileType, native_enum=False, length=16), nullable=False
+    )
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_path: Mapped[str] = mapped_column(String(1024), nullable=False)
     status: Mapped[DocumentStatus] = mapped_column(
-        Enum(DocumentStatus, native_enum=False, length=32), default=DocumentStatus.UPLOADED, nullable=False
+        Enum(DocumentStatus, native_enum=False, length=32),
+        default=DocumentStatus.UPLOADED,
+        nullable=False,
     )
     title: Mapped[str | None] = mapped_column(String(512))
     page_count: Mapped[int | None] = mapped_column(Integer)
@@ -37,12 +41,18 @@ class DocumentOptions(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "document_options"
 
     document_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"),
-        unique=True, nullable=False,
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
     )
     study_goal: Mapped[str | None] = mapped_column(Text)
-    card_style: Mapped[CardStyle] = mapped_column(Enum(CardStyle, native_enum=False, length=32), default=CardStyle.CLOZE_HEAVY, nullable=False)
-    deck_size: Mapped[DeckSize] = mapped_column(Enum(DeckSize, native_enum=False, length=32), default=DeckSize.MEDIUM, nullable=False)
+    card_style: Mapped[CardStyle] = mapped_column(
+        Enum(CardStyle, native_enum=False, length=32), default=CardStyle.CLOZE_HEAVY, nullable=False
+    )
+    deck_size: Mapped[DeckSize] = mapped_column(
+        Enum(DeckSize, native_enum=False, length=32), default=DeckSize.MEDIUM, nullable=False
+    )
     scope: Mapped[str | None] = mapped_column(Text)  # "focus on chapters 3-5"
 
     document: Mapped["Document"] = relationship(back_populates="options")

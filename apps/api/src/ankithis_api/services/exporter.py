@@ -23,12 +23,14 @@ def export_csv(cards: list[dict]) -> bytes:
     for card in cards:
         if card.get("suppressed"):
             continue
-        writer.writerow([
-            card["front"],
-            card.get("back", ""),
-            card.get("card_type", "basic"),
-            card.get("tags", ""),
-        ])
+        writer.writerow(
+            [
+                card["front"],
+                card.get("back", ""),
+                card.get("card_type", "basic"),
+                card.get("tags", ""),
+            ]
+        )
 
     return output.getvalue().encode("utf-8")
 

@@ -61,17 +61,13 @@ async def review_cards(
 
     # Get sections
     sections_result = await db.execute(
-        select(Section)
-        .where(Section.document_id == document_id)
-        .order_by(Section.position)
+        select(Section).where(Section.document_id == document_id).order_by(Section.position)
     )
     sections = list(sections_result.scalars())
 
     # Get all cards
     cards_result = await db.execute(
-        select(Card)
-        .where(Card.document_id == document_id)
-        .order_by(Card.sort_order)
+        select(Card).where(Card.document_id == document_id).order_by(Card.sort_order)
     )
     all_cards = list(cards_result.scalars())
 
@@ -83,42 +79,46 @@ async def review_cards(
     section_groups = []
     for section in sections:
         cards = section_map.get(section.id, [])
-        section_groups.append(SectionCards(
-            section_id=str(section.id),
-            section_title=section.title,
-            cards=[
-                CardOut(
-                    id=str(c.id),
-                    front=c.front,
-                    back=c.back,
-                    card_type=c.card_type.value,
-                    tags=c.tags,
-                    critique_verdict=c.critique_verdict.value if c.critique_verdict else None,
-                    suppressed=c.suppressed,
-                )
-                for c in cards
-            ],
-        ))
+        section_groups.append(
+            SectionCards(
+                section_id=str(section.id),
+                section_title=section.title,
+                cards=[
+                    CardOut(
+                        id=str(c.id),
+                        front=c.front,
+                        back=c.back,
+                        card_type=c.card_type.value,
+                        tags=c.tags,
+                        critique_verdict=c.critique_verdict.value if c.critique_verdict else None,
+                        suppressed=c.suppressed,
+                    )
+                    for c in cards
+                ],
+            )
+        )
 
     # Cards without a section
     unsectioned = section_map.get(None, [])
     if unsectioned:
-        section_groups.append(SectionCards(
-            section_id="none",
-            section_title="Unsectioned",
-            cards=[
-                CardOut(
-                    id=str(c.id),
-                    front=c.front,
-                    back=c.back,
-                    card_type=c.card_type.value,
-                    tags=c.tags,
-                    critique_verdict=c.critique_verdict.value if c.critique_verdict else None,
-                    suppressed=c.suppressed,
-                )
-                for c in unsectioned
-            ],
-        ))
+        section_groups.append(
+            SectionCards(
+                section_id="none",
+                section_title="Unsectioned",
+                cards=[
+                    CardOut(
+                        id=str(c.id),
+                        front=c.front,
+                        back=c.back,
+                        card_type=c.card_type.value,
+                        tags=c.tags,
+                        critique_verdict=c.critique_verdict.value if c.critique_verdict else None,
+                        suppressed=c.suppressed,
+                    )
+                    for c in unsectioned
+                ],
+            )
+        )
 
     total = len(all_cards)
     suppressed = sum(1 for c in all_cards if c.suppressed)

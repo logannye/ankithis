@@ -64,12 +64,22 @@ def resolve_duplicates(
 
     pairs_for_prompt = []
     for i, (idx_a, idx_b, score) in enumerate(pairs):
-        pairs_for_prompt.append({
-            "pair_index": i,
-            "overlap_score": round(score, 2),
-            "card_a": {"index": idx_a, "front": cards[idx_a]["front"], "back": cards[idx_a]["back"]},
-            "card_b": {"index": idx_b, "front": cards[idx_b]["front"], "back": cards[idx_b]["back"]},
-        })
+        pairs_for_prompt.append(
+            {
+                "pair_index": i,
+                "overlap_score": round(score, 2),
+                "card_a": {
+                    "index": idx_a,
+                    "front": cards[idx_a]["front"],
+                    "back": cards[idx_a]["back"],
+                },
+                "card_b": {
+                    "index": idx_b,
+                    "front": cards[idx_b]["front"],
+                    "back": cards[idx_b]["back"],
+                },
+            }
+        )
 
     user = USER_TEMPLATE.format(pairs_json=json.dumps(pairs_for_prompt, indent=2))
     result = structured_call(

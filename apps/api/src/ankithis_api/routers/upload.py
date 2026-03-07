@@ -12,9 +12,9 @@ from ankithis_api.auth import get_current_user
 from ankithis_api.config import settings
 from ankithis_api.db import get_db
 from ankithis_api.models.document import Chunk, Document, DocumentOptions, Section
+from ankithis_api.models.enums import CardStyle, DeckSize, DocumentStatus, FileType
 from ankithis_api.models.user import User
 from ankithis_api.rate_limit import check_rate_limit
-from ankithis_api.models.enums import CardStyle, DeckSize, DocumentStatus, FileType
 from ankithis_api.schemas.upload import UploadResponse
 from ankithis_api.services.chunker import chunk_section
 from ankithis_api.services.parser import parse_document
@@ -22,7 +22,12 @@ from ankithis_api.services.storage import save_upload
 
 router = APIRouter()
 
-ALLOWED_EXTENSIONS = {".pdf": FileType.PDF, ".docx": FileType.DOCX, ".txt": FileType.TXT, ".md": FileType.MD}
+ALLOWED_EXTENSIONS = {
+    ".pdf": FileType.PDF,
+    ".docx": FileType.DOCX,
+    ".txt": FileType.TXT,
+    ".md": FileType.MD,
+}
 
 
 @router.post("/api/upload", response_model=UploadResponse)
@@ -110,12 +115,14 @@ async def upload_document(
 
         chunks = chunk_section(parsed_section.paragraphs, start_position=0)
         for chunk in chunks:
-            db.add(Chunk(
-                section_id=section.id,
-                text=chunk.text,
-                position=chunk.position,
-                word_count=chunk.word_count,
-            ))
+            db.add(
+                Chunk(
+                    section_id=section.id,
+                    text=chunk.text,
+                    position=chunk.position,
+                    word_count=chunk.word_count,
+                )
+            )
             total_chunks += 1
 
     await db.commit()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, status
 from redis import Redis
 
 from ankithis_api.config import settings

@@ -26,8 +26,14 @@ def test_find_duplicate_pairs():
     from ankithis_api.services.stages.dedup import find_duplicate_pairs
 
     cards = [
-        {"front": "The mitochondria is the powerhouse of the cell and generates energy.", "back": "A"},
-        {"front": "The mitochondria is the powerhouse of the cell and generates ATP energy.", "back": "B"},
+        {
+            "front": "The mitochondria is the powerhouse of the cell and generates energy.",
+            "back": "A",
+        },
+        {
+            "front": "The mitochondria is the powerhouse of the cell and generates ATP energy.",
+            "back": "B",
+        },
         {"front": "Completely different card about photosynthesis in plants.", "back": "C"},
     ]
     pairs = find_duplicate_pairs(cards)
@@ -42,7 +48,11 @@ def test_find_duplicate_pairs_skips_suppressed():
 
     cards = [
         {"front": "The mitochondria is the powerhouse of the cell.", "back": "A"},
-        {"front": "The mitochondria is the powerhouse of the cell.", "back": "B", "suppressed": True},
+        {
+            "front": "The mitochondria is the powerhouse of the cell.",
+            "back": "B",
+            "suppressed": True,
+        },
     ]
     pairs = find_duplicate_pairs(cards)
     assert len(pairs) == 0
@@ -88,7 +98,14 @@ def test_apply_dedup_merge():
         {"front": "Card A front", "back": "A back"},
         {"front": "Card B front", "back": "B back"},
     ]
-    decisions = [{"pair_index": 0, "action": "merge", "merged_front": "Merged front", "merged_back": "Merged back"}]
+    decisions = [
+        {
+            "pair_index": 0,
+            "action": "merge",
+            "merged_front": "Merged front",
+            "merged_back": "Merged back",
+        }
+    ]
     result = apply_dedup(cards, [(0, 1, 0.9)], decisions)
     assert result[0]["front"] == "Merged front"
     assert result[0]["back"] == "Merged back"

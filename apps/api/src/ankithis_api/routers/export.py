@@ -24,9 +24,7 @@ from ankithis_api.services.exporter import export_apkg, export_csv
 router = APIRouter()
 
 
-async def _resolve_user(
-    token: str | None, db: AsyncSession
-) -> User:
+async def _resolve_user(token: str | None, db: AsyncSession) -> User:
     """Resolve user from a query-string JWT token."""
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")

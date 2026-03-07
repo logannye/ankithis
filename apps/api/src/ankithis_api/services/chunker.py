@@ -36,11 +36,13 @@ def chunk_section(paragraphs: list[str], start_position: int = 0) -> list[TextCh
         # If adding this paragraph would exceed max and we already have content,
         # flush the current chunk first
         if current_words + para_words > MAX_CHUNK_WORDS and current_paragraphs:
-            chunks.append(TextChunk(
-                text="\n\n".join(current_paragraphs),
-                word_count=current_words,
-                position=position,
-            ))
+            chunks.append(
+                TextChunk(
+                    text="\n\n".join(current_paragraphs),
+                    word_count=current_words,
+                    position=position,
+                )
+            )
             position += 1
             current_paragraphs = []
             current_words = 0
@@ -50,11 +52,13 @@ def chunk_section(paragraphs: list[str], start_position: int = 0) -> list[TextCh
 
         # If we've reached a good size, flush
         if current_words >= MIN_CHUNK_WORDS:
-            chunks.append(TextChunk(
-                text="\n\n".join(current_paragraphs),
-                word_count=current_words,
-                position=position,
-            ))
+            chunks.append(
+                TextChunk(
+                    text="\n\n".join(current_paragraphs),
+                    word_count=current_words,
+                    position=position,
+                )
+            )
             position += 1
             current_paragraphs = []
             current_words = 0
@@ -71,10 +75,12 @@ def chunk_section(paragraphs: list[str], start_position: int = 0) -> list[TextCh
                 position=last.position,
             )
         else:
-            chunks.append(TextChunk(
-                text="\n\n".join(current_paragraphs),
-                word_count=current_words,
-                position=position,
-            ))
+            chunks.append(
+                TextChunk(
+                    text="\n\n".join(current_paragraphs),
+                    word_count=current_words,
+                    position=position,
+                )
+            )
 
     return chunks

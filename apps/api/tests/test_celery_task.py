@@ -1,8 +1,6 @@
 """Tests for Celery task dispatching and regeneration."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from ankithis_api.worker import celery_app
 
@@ -26,8 +24,6 @@ def test_generate_task_registered():
 @patch("ankithis_api.tasks.generation._run_pipeline")
 def test_generate_task_calls_pipeline(mock_pipeline):
     """Task calls _run_pipeline with correct UUIDs."""
-    import asyncio
-    from unittest.mock import AsyncMock
 
     mock_pipeline.return_value = None
     # Make asyncio.run work with the mock

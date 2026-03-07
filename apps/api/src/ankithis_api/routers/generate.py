@@ -41,7 +41,10 @@ async def generate_cards(
     if doc.status not in (DocumentStatus.PARSED, DocumentStatus.COMPLETED):
         raise HTTPException(
             status_code=409,
-            detail=f"Document is in '{doc.status.value}' state. Must be 'parsed' or 'completed' to generate.",
+            detail=(
+                f"Document is in '{doc.status.value}' state."
+                " Must be 'parsed' or 'completed' to generate."
+            ),
         )
 
     job = GenerationJob(

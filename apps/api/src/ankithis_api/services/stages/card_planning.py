@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 # Cards per 1,000 words — scales with document length
 CARDS_PER_1K_WORDS = {
-    DeckSize.SMALL: 5,    # key concepts only
+    DeckSize.SMALL: 5,  # key concepts only
     DeckSize.MEDIUM: 12,  # solid coverage
-    DeckSize.LARGE: 22,   # deep, thorough coverage
+    DeckSize.LARGE: 22,  # deep, thorough coverage
 }
 
 MIN_CARDS = 5

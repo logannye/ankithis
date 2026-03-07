@@ -24,9 +24,9 @@ class CardStyle(str, enum.Enum):
 
 
 class DeckSize(str, enum.Enum):
-    SMALL = "small"      # ~5 cards per 1K words — key concepts only
-    MEDIUM = "medium"    # ~12 cards per 1K words — solid coverage
-    LARGE = "large"      # ~22 cards per 1K words — deep, thorough coverage
+    SMALL = "small"  # ~5 cards per 1K words — key concepts only
+    MEDIUM = "medium"  # ~12 cards per 1K words — solid coverage
+    LARGE = "large"  # ~22 cards per 1K words — deep, thorough coverage
 
 
 class CardType(str, enum.Enum):

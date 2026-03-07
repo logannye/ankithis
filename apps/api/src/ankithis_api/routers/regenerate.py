@@ -47,7 +47,10 @@ async def regenerate_cards(
     if doc.status not in (DocumentStatus.COMPLETED, DocumentStatus.FAILED):
         raise HTTPException(
             status_code=409,
-            detail=f"Document is in '{doc.status.value}' state. Must be 'completed' or 'failed' to regenerate.",
+            detail=(
+                f"Document is in '{doc.status.value}' state."
+                " Must be 'completed' or 'failed' to regenerate."
+            ),
         )
 
     # Clean up old generation data (keep sections/chunks)

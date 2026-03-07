@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ankithis_api.models.card import Card
-from ankithis_api.models.document import Chunk, Document, Section
+from ankithis_api.models.document import Document, Section
 from ankithis_api.models.enums import (
     CardStyle,
     CardType,
@@ -75,43 +75,41 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
 
             # Persist concepts
             for c in merged:
-                db.add(Concept(
-                    document_id=doc.id,
-                    section_id=section.id,
-                    name=c["name"],
-                    description=c["description"],
-                    importance=c["importance"],
-                ))
+                db.add(
+                    Concept(
+                        document_id=doc.id,
+                        section_id=section.id,
+                        name=c["name"],
+                        description=c["description"],
+                        importance=c["importance"],
+                    )
+                )
 
         await db.flush()
 
         # Stage C: Card Planning
         await _update_job(db, job, JobStatus.STAGE_C)
-        total_words = sum(
-            chunk.word_count
-            for section in doc.sections
-            for chunk in section.chunks
-        )
+        total_words = sum(chunk.word_count for section in doc.sections for chunk in section.chunks)
         card_plans = plan_cards(merged_concepts_all, deck_size, card_style, study_goal, total_words)
 
         # Persist card plans
         concept_id_map = {}
-        concepts_result = await db.execute(
-            select(Concept).where(Concept.document_id == doc.id)
-        )
+        concepts_result = await db.execute(select(Concept).where(Concept.document_id == doc.id))
         for concept in concepts_result.scalars():
             concept_id_map[concept.name] = concept.id
 
         for plan in card_plans:
             concept_id = concept_id_map.get(plan["concept_name"])
             if concept_id:
-                db.add(CardPlan(
-                    document_id=doc.id,
-                    concept_id=concept_id,
-                    card_type=plan["card_type"],
-                    direction=plan["direction"],
-                    priority=plan["priority"],
-                ))
+                db.add(
+                    CardPlan(
+                        document_id=doc.id,
+                        concept_id=concept_id,
+                        card_type=plan["card_type"],
+                        direction=plan["direction"],
+                        priority=plan["priority"],
+                    )
+                )
 
         await db.flush()
 
@@ -119,9 +117,7 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
         await _update_job(db, job, JobStatus.STAGE_D)
 
         source_text = "\n\n".join(
-            chunk.text
-            for section in doc.sections
-            for chunk in section.chunks
+            chunk.text for section in doc.sections for chunk in section.chunks
         )
 
         generated = generate_cards(card_plans, source_text, study_goal)
@@ -160,17 +156,19 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
                 except ValueError:
                     pass
 
-            db.add(Card(
-                document_id=doc.id,
-                section_id=section_id,
-                card_type=card_type,
-                front=card_data["front"],
-                back=card_data["back"],
-                tags=card_data.get("tags", ""),
-                critique_verdict=critique_verdict,
-                suppressed=is_suppressed,
-                sort_order=i,
-            ))
+            db.add(
+                Card(
+                    document_id=doc.id,
+                    section_id=section_id,
+                    card_type=card_type,
+                    front=card_data["front"],
+                    back=card_data["back"],
+                    tags=card_data.get("tags", ""),
+                    critique_verdict=critique_verdict,
+                    suppressed=is_suppressed,
+                    sort_order=i,
+                )
+            )
 
         # Update document and job status
         doc.status = DocumentStatus.COMPLETED

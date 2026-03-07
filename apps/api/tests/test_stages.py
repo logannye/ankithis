@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 from ankithis_api.models.enums import CardStyle, DeckSize
 
-
 # --- Stage A: Concept Extraction ---
+
 
 @patch("ankithis_api.services.stages.concept_extraction.structured_call")
 def test_stage_a_extracts_concepts(mock_call):
@@ -48,6 +48,7 @@ def test_stage_a_with_study_goal(mock_call):
 
 # --- Stage B: Concept Merge ---
 
+
 @patch("ankithis_api.services.stages.concept_merge.structured_call")
 def test_stage_b_merges_concepts(mock_call):
     mock_call.return_value = {
@@ -82,6 +83,7 @@ def test_stage_b_empty_input(mock_call):
 
 
 # --- Stage C: Card Planning ---
+
 
 @patch("ankithis_api.services.stages.card_planning.structured_call")
 def test_stage_c_plans_cards(mock_call):
@@ -122,6 +124,7 @@ def test_stage_c_empty_input(mock_call):
 
 # --- Stage D: Card Generation ---
 
+
 @patch("ankithis_api.services.stages.card_generation.structured_call")
 def test_stage_d_generates_cloze(mock_call):
     mock_call.return_value = {
@@ -137,7 +140,9 @@ def test_stage_d_generates_cloze(mock_call):
 
     from ankithis_api.services.stages.card_generation import generate_cards
 
-    plans = [{"concept_name": "Mitochondria", "card_type": "cloze", "direction": "...", "priority": 9}]
+    plans = [
+        {"concept_name": "Mitochondria", "card_type": "cloze", "direction": "...", "priority": 9}
+    ]
     cards = generate_cards(plans, source_text="The mitochondria...")
     assert len(cards) == 1
     assert "{{c1::" in cards[0]["front"]
@@ -159,7 +164,9 @@ def test_stage_d_generates_basic(mock_call):
 
     from ankithis_api.services.stages.card_generation import generate_cards
 
-    plans = [{"concept_name": "Mitochondria", "card_type": "basic", "direction": "...", "priority": 9}]
+    plans = [
+        {"concept_name": "Mitochondria", "card_type": "basic", "direction": "...", "priority": 9}
+    ]
     cards = generate_cards(plans, source_text="The mitochondria...")
     assert len(cards) == 1
     assert cards[0]["front"].endswith("?")
@@ -178,13 +185,15 @@ def test_stage_d_empty_input(mock_call):
 @patch("ankithis_api.services.stages.card_generation.structured_call")
 def test_stage_d_batches_large_input(mock_call):
     """More than BATCH_SIZE plans should result in multiple LLM calls."""
-    mock_call.return_value = {"cards": [
-        {"front": "Q?", "back": "A", "card_type": "basic", "tags": "t"}
-    ]}
+    mock_call.return_value = {
+        "cards": [{"front": "Q?", "back": "A", "card_type": "basic", "tags": "t"}]
+    }
 
-    from ankithis_api.services.stages.card_generation import generate_cards, BATCH_SIZE
+    from ankithis_api.services.stages.card_generation import BATCH_SIZE, generate_cards
 
-    plans = [{"concept_name": f"C{i}", "card_type": "basic", "direction": "...", "priority": 5}
-             for i in range(BATCH_SIZE + 5)]
-    cards = generate_cards(plans, source_text="text")
+    plans = [
+        {"concept_name": f"C{i}", "card_type": "basic", "direction": "...", "priority": 5}
+        for i in range(BATCH_SIZE + 5)
+    ]
+    generate_cards(plans, source_text="text")
     assert mock_call.call_count == 2  # ceil((BATCH_SIZE+5)/BATCH_SIZE)
