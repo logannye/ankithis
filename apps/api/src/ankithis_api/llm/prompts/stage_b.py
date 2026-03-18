@@ -1,6 +1,6 @@
 """Stage B: Concept Merge — deduplicate and rank concepts within a section."""
 
-SYSTEM = """\
+_BASE_SYSTEM = """\
 You are an expert at organizing and consolidating educational concepts. \
 Given a list of concepts extracted from multiple chunks of the same section, \
 your job is to:
@@ -17,6 +17,15 @@ Rules:
 - Aim for 5-20 merged concepts per section depending on section size
 """
 
+_MERGE_AGGRESSIVENESS: dict[str, str] = {
+    "lecture_slides": "Merge aggressively — slides often repeat concepts for emphasis. Deduplicate heavily.",
+    "research_paper": "Merge lightly — abstract, results, and discussion may state the same finding differently, but each framing is pedagogically valuable. Keep more variants.",
+    "textbook_chapter": "Merge moderately — merge duplicate definitions, but keep distinct applications of the same concept.",
+    "personal_notes": "Merge very lightly — the user already condensed. Assume each note is intentionally distinct.",
+    "technical_docs": "Merge moderately — merge duplicate API descriptions, keep distinct usage contexts.",
+    "general_article": "Merge moderately — standard deduplication.",
+}
+
 USER_TEMPLATE = """\
 Merge and deduplicate these concepts from one section. The student's \
 study goal is: {study_goal}
@@ -28,3 +37,15 @@ Concepts to merge:
 
 Return the merged, deduplicated concept list.
 """
+
+
+def build_system_prompt(content_type: str | None = None) -> str:
+    """Build an adapted system prompt for concept merging."""
+    parts = [_BASE_SYSTEM]
+    if content_type and content_type in _MERGE_AGGRESSIVENESS:
+        parts.append(f"\nMerge strategy: {_MERGE_AGGRESSIVENESS[content_type]}")
+    return "\n".join(parts)
+
+
+# Backward compatibility
+SYSTEM = _BASE_SYSTEM

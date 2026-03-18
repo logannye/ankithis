@@ -1,6 +1,6 @@
 """Stage C: Card Planning — decide how many cards, types, and directions."""
 
-SYSTEM = """\
+_BASE_SYSTEM = """\
 You are an expert Anki flashcard designer. Given a set of merged concepts \
 and a target deck size, plan the flashcards to create.
 
@@ -20,6 +20,13 @@ Rules:
 - Target total cards: {target_cards}
 """
 
+DENSITY_MODIFIERS: dict[str, float] = {
+    "sparse": 1.5,
+    "moderate": 1.0,
+    "dense": 0.8,
+    "very_dense": 0.6,
+}
+
 USER_TEMPLATE = """\
 Plan flashcards for these concepts. Target approximately {target_cards} cards total.
 Card style preference: {card_style}
@@ -30,3 +37,7 @@ Concepts:
 
 Plan the cards, specifying type and direction for each.
 """
+
+
+# Backward compatibility
+SYSTEM = _BASE_SYSTEM

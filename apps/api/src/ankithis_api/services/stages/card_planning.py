@@ -7,7 +7,7 @@ import logging
 
 from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
-from ankithis_api.llm.prompts.stage_c import SYSTEM, USER_TEMPLATE
+from ankithis_api.llm.prompts.stage_c import DENSITY_MODIFIERS, SYSTEM, USER_TEMPLATE
 from ankithis_api.llm.schemas import CardPlanOutput, schema_for
 from ankithis_api.models.enums import CardStyle, DeckSize
 
@@ -36,13 +36,23 @@ def plan_cards(
     card_style: CardStyle = CardStyle.CLOZE_HEAVY,
     study_goal: str = "Master the key concepts in this material",
     total_words: int = 0,
+    content_profile: dict | None = None,
 ) -> list[dict]:
     """Plan cards for a set of merged concepts. Returns card plan dicts."""
     if not concepts:
         return []
 
     density = CARDS_PER_1K_WORDS[deck_size]
-    target = max(MIN_CARDS, min(MAX_CARDS, round(total_words / 1000 * density)))
+    base_target = max(MIN_CARDS, min(MAX_CARDS, round(total_words / 1000 * density)))
+
+    # Apply density modifier from content profile
+    density_modifier = 1.0
+    if content_profile:
+        info_density = content_profile.get("information_density")
+        if info_density and info_density in DENSITY_MODIFIERS:
+            density_modifier = DENSITY_MODIFIERS[info_density]
+
+    target = max(MIN_CARDS, round(base_target * density_modifier))
     style_desc = CARD_STYLE_DESC[card_style]
 
     system = SYSTEM.format(card_style=style_desc, target_cards=target)

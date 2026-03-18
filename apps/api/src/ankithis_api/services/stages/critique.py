@@ -7,7 +7,7 @@ import logging
 
 from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
-from ankithis_api.llm.prompts.stage_e import SYSTEM, USER_TEMPLATE
+from ankithis_api.llm.prompts.stage_e import USER_TEMPLATE, build_system_prompt
 from ankithis_api.llm.schemas import CritiqueOutput, schema_for
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ BATCH_SIZE = 25
 def critique_cards(
     cards: list[dict],
     source_text: str,
+    content_type: str | None = None,
 ) -> list[dict]:
     """Critique cards and return verdict for each.
 
@@ -26,6 +27,8 @@ def critique_cards(
     """
     if not cards:
         return []
+
+    system = build_system_prompt(content_type=content_type)
 
     all_reviews: list[dict] = []
 
@@ -43,7 +46,7 @@ def critique_cards(
             cards_json=json.dumps(cards_for_prompt, indent=2),
         )
         result = structured_call(
-            system=SYSTEM,
+            system=system,
             user=user,
             tool_name="critique_cards",
             tool_schema=schema_for(CritiqueOutput),

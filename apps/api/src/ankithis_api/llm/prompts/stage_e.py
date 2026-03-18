@@ -1,6 +1,6 @@
 """Stage E: Critique — evaluate card quality and rewrite if needed."""
 
-SYSTEM = """\
+_BASE_SYSTEM = """\
 You are an expert Anki flashcard quality reviewer. Evaluate each card against \
 this rubric and give a verdict.
 
@@ -23,6 +23,23 @@ For "rewrite" verdicts, provide corrected front and back text.
 For "pass" and "suppress", front and back can be empty strings.
 """
 
+_QUALITY_BAR: dict[str, str] = {
+    "research_paper": "Be STRICT — suppress any card that oversimplifies a finding or omits important caveats. Scientific accuracy is non-negotiable.",
+    "lecture_slides": "Be MODERATE — accept cards that capture the gist even if slightly imprecise. Slides are already simplified.",
+    "personal_notes": "Be LENIENT — respect the user's own framing. Only suppress factually wrong or truly ambiguous cards.",
+    "technical_docs": "Be STRICT on accuracy — a wrong API parameter or behavior is worse than no card at all.",
+    "textbook_chapter": "Be MODERATE — balance accuracy with accessibility.",
+    "general_article": "Be MODERATE — standard quality bar.",
+}
+
+_ANTI_PATTERN_INSTRUCTIONS = """\
+Also check for these anti-patterns:
+- TRIVIA: Cards asking "what year", "who discovered" without testing understanding -> suppress
+- VERBATIM: Card back is a near-copy of the source text -> rewrite in the card's own words
+- AMBIGUOUS CLOZE: The blank could be filled by multiple correct answers -> rewrite with more context
+- COMPOUND: Card tests two independent questions joined by "and" -> rewrite as separate concepts
+"""
+
 USER_TEMPLATE = """\
 Review these flashcards for quality. Source material is provided for \
 fact-checking.
@@ -36,3 +53,15 @@ Cards to review:
 For each card, provide a verdict (pass/rewrite/suppress) and corrected \
 text if rewriting.
 """
+
+
+def build_system_prompt(content_type: str | None = None) -> str:
+    """Build an adapted system prompt for card critique."""
+    parts = [_BASE_SYSTEM, _ANTI_PATTERN_INSTRUCTIONS]
+    if content_type and content_type in _QUALITY_BAR:
+        parts.append(f"\nQuality threshold: {_QUALITY_BAR[content_type]}")
+    return "\n".join(parts)
+
+
+# Backward compatibility
+SYSTEM = _BASE_SYSTEM

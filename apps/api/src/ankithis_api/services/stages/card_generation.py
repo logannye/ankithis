@@ -7,7 +7,7 @@ import logging
 
 from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
-from ankithis_api.llm.prompts.stage_d import SYSTEM, USER_TEMPLATE
+from ankithis_api.llm.prompts.stage_d import SYSTEM, USER_TEMPLATE, build_system_prompt
 from ankithis_api.llm.schemas import CardGenerationOutput, schema_for
 
 logger = logging.getLogger(__name__)
@@ -20,10 +20,23 @@ def generate_cards(
     plans: list[dict],
     source_text: str,
     study_goal: str = "Master the key concepts in this material",
+    content_profile: dict | None = None,
 ) -> list[dict]:
     """Generate flashcard text from card plans. Returns generated card dicts."""
     if not plans:
         return []
+
+    # Build adapted system prompt from content profile
+    difficulty = None
+    special_considerations = None
+    if content_profile:
+        difficulty = content_profile.get("difficulty")
+        special_considerations = content_profile.get("special_considerations")
+
+    system = build_system_prompt(
+        difficulty=difficulty,
+        special_considerations=special_considerations,
+    )
 
     all_cards: list[dict] = []
 
@@ -38,7 +51,7 @@ def generate_cards(
             plans_json=json.dumps(batch, indent=2),
         )
         result = structured_call(
-            system=SYSTEM,
+            system=system,
             user=user,
             tool_name="generate_cards",
             tool_schema=schema_for(CardGenerationOutput),
