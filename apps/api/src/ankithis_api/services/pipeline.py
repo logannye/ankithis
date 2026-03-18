@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ankithis_api.models.card import Card
+from ankithis_api.models.content_profile import ContentProfile
 from ankithis_api.models.document import Document, Section
 from ankithis_api.models.enums import (
     CardStyle,
@@ -20,9 +21,13 @@ from ankithis_api.models.enums import (
     JobStatus,
 )
 from ankithis_api.models.generation import CardPlan, Concept, GenerationJob
+from ankithis_api.services.chunker import get_chunk_params
+from ankithis_api.services.parser import ParsedSection
 from ankithis_api.services.qc import run_qc
+from ankithis_api.services.section_annotator import annotate_section
 from ankithis_api.services.stages.card_generation import generate_cards
 from ankithis_api.services.stages.card_planning import plan_cards
+from ankithis_api.services.stages.classification import classify_document
 from ankithis_api.services.stages.concept_extraction import extract_concepts
 from ankithis_api.services.stages.concept_merge import merge_concepts
 from ankithis_api.services.stages.critique import apply_critique, critique_cards
@@ -48,6 +53,57 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
     deck_size = doc.options.deck_size if doc.options else DeckSize.MEDIUM
 
     try:
+        # Stage 0: Content Classification
+        await _update_job(db, job, JobStatus.CLASSIFYING)
+
+        # Build ParsedSection list from DB sections for classification
+        parsed_sections = []
+        for section in doc.sections:
+            paragraphs = [
+                chunk.text
+                for chunk in sorted(section.chunks, key=lambda c: c.position)
+            ]
+            parsed_sections.append(ParsedSection(
+                title=section.title,
+                level=section.level or 1,
+                paragraphs=paragraphs,
+            ))
+
+        # Classify
+        profile_dict = classify_document(parsed_sections)
+
+        # Persist ContentProfile
+        content_profile = ContentProfile(
+            document_id=doc.id,
+            content_type=profile_dict["content_type"],
+            domain=profile_dict.get("domain", "general"),
+            difficulty=profile_dict.get("difficulty", "intermediate"),
+            information_density=profile_dict.get("information_density", "moderate"),
+            structure_quality=profile_dict.get("structure_quality", "semi_structured"),
+            primary_knowledge_type=profile_dict.get("primary_knowledge_type", "mixed"),
+            recommended_cloze_ratio=profile_dict.get("recommended_cloze_ratio", 0.5),
+            recommended_qa_ratio=profile_dict.get("recommended_qa_ratio", 0.5),
+            special_considerations=profile_dict.get("special_considerations", []),
+        )
+        db.add(content_profile)
+
+        # Annotate sections with pedagogical function
+        for section in doc.sections:
+            first_para = ""
+            if section.chunks:
+                sorted_chunks = sorted(section.chunks, key=lambda c: c.position)
+                first_para = sorted_chunks[0].text[:500] if sorted_chunks else ""
+            section.pedagogical_function = annotate_section(section.title, first_para)
+
+        await db.flush()
+
+        logger.info(
+            "Stage 0 complete: type=%s domain=%s difficulty=%s",
+            profile_dict["content_type"],
+            profile_dict.get("domain"),
+            profile_dict.get("difficulty"),
+        )
+
         # Stage A: Concept Extraction (per chunk)
         await _update_job(db, job, JobStatus.STAGE_A)
         all_concepts_by_section: dict[uuid.UUID, list[dict]] = {}
@@ -55,7 +111,14 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
         for section in doc.sections:
             section_concepts = []
             for chunk in section.chunks:
-                concepts = extract_concepts(chunk.text, study_goal)
+                concepts = extract_concepts(
+                    chunk.text,
+                    study_goal=study_goal,
+                    content_type=profile_dict.get("content_type"),
+                    difficulty=profile_dict.get("difficulty"),
+                    pedagogical_function=section.pedagogical_function,
+                    visual_context=chunk.visual_context,
+                )
                 section_concepts.extend(concepts)
             all_concepts_by_section[section.id] = section_concepts
 
@@ -68,7 +131,10 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
             raw_concepts = all_concepts_by_section.get(section.id, [])
             if not raw_concepts:
                 continue
-            merged = merge_concepts(raw_concepts, section.title, study_goal)
+            merged = merge_concepts(
+                raw_concepts, section.title, study_goal,
+                content_type=profile_dict.get("content_type"),
+            )
             for c in merged:
                 concept_to_section[c["name"]] = section.id
             merged_concepts_all.extend(merged)
@@ -90,7 +156,10 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
         # Stage C: Card Planning
         await _update_job(db, job, JobStatus.STAGE_C)
         total_words = sum(chunk.word_count for section in doc.sections for chunk in section.chunks)
-        card_plans = plan_cards(merged_concepts_all, deck_size, card_style, study_goal, total_words)
+        card_plans = plan_cards(
+            merged_concepts_all, deck_size, card_style, study_goal, total_words,
+            content_profile=profile_dict,
+        )
 
         # Persist card plans
         concept_id_map = {}
@@ -120,11 +189,17 @@ async def run_pipeline(document_id: uuid.UUID, job_id: uuid.UUID, db: AsyncSessi
             chunk.text for section in doc.sections for chunk in section.chunks
         )
 
-        generated = generate_cards(card_plans, source_text, study_goal)
+        generated = generate_cards(
+            card_plans, source_text, study_goal,
+            content_profile=profile_dict,
+        )
 
         # Stage E: Critique
         await _update_job(db, job, JobStatus.STAGE_E)
-        reviews = critique_cards(generated, source_text)
+        reviews = critique_cards(
+            generated, source_text,
+            content_type=profile_dict.get("content_type"),
+        )
         generated = apply_critique(generated, reviews)
 
         # Stage F: Dedup

@@ -37,6 +37,7 @@ class CardType(str, enum.Enum):
 
 class JobStatus(str, enum.Enum):
     PENDING = "pending"
+    CLASSIFYING = "classifying"  # Stage 0: content classification
     STAGE_A = "stage_a"  # concept extraction
     STAGE_B = "stage_b"  # concept merge
     STAGE_C = "stage_c"  # card planning

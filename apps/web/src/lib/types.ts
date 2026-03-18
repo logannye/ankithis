@@ -3,6 +3,7 @@ export type DeckSize = "small" | "medium" | "large";
 
 export type JobStatus =
   | "pending"
+  | "classifying"
   | "stage_a"
   | "stage_b"
   | "stage_c"
@@ -64,6 +65,7 @@ export interface ReviewResponse {
 
 export const STAGE_LABELS: Record<string, string> = {
   pending: "Queued",
+  classifying: "Analyzing Content",
   stage_a: "Extracting Concepts",
   stage_b: "Merging & Ranking",
   stage_c: "Planning Cards",
@@ -77,6 +79,7 @@ export const STAGE_LABELS: Record<string, string> = {
 
 export const STAGE_ORDER: JobStatus[] = [
   "pending",
+  "classifying",
   "stage_a",
   "stage_b",
   "stage_c",
