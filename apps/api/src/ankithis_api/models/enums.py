@@ -38,6 +38,9 @@ class CardType(str, enum.Enum):
 class JobStatus(str, enum.Enum):
     PENDING = "pending"
     CLASSIFYING = "classifying"  # Stage 0: content classification
+    FETCHING_VIDEO = "fetching_video"  # YouTube: download video
+    EXTRACTING_TRANSCRIPT = "extracting_transcript"  # YouTube: extract transcript
+    ANALYZING_VISUALS = "analyzing_visuals"  # YouTube: analyze visual frames
     STAGE_A = "stage_a"  # concept extraction
     STAGE_B = "stage_b"  # concept merge
     STAGE_C = "stage_c"  # card planning

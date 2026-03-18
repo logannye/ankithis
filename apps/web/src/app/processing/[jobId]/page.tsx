@@ -5,13 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useJobPolling } from "@/lib/hooks/use-job-polling";
 import { useRequireAuth } from "@/lib/hooks/use-auth";
-import { STAGE_LABELS, STAGE_ORDER } from "@/lib/types";
+import { STAGE_LABELS, STAGE_ORDER_DOCUMENT, STAGE_ORDER_YOUTUBE } from "@/lib/types";
 import type { JobStatus } from "@/lib/types";
-
-function stageIndex(status: JobStatus): number {
-  const idx = STAGE_ORDER.indexOf(status);
-  return idx === -1 ? 0 : idx;
-}
 
 export default function ProcessingPage() {
   const { loading: authLoading } = useRequireAuth();
@@ -19,7 +14,8 @@ export default function ProcessingPage() {
   const router = useRouter();
   const { job, error } = useJobPolling(params.jobId);
 
-  const currentIdx = job ? stageIndex(job.status) : 0;
+  const stages = job?.source_type === "youtube" ? STAGE_ORDER_YOUTUBE : STAGE_ORDER_DOCUMENT;
+  const currentIdx = job ? Math.max(stages.indexOf(job.status), 0) : 0;
 
   useEffect(() => {
     if (job?.status === "completed") {
@@ -53,7 +49,7 @@ export default function ProcessingPage() {
 
         {/* Stage stepper */}
         <div className="space-y-0">
-          {STAGE_ORDER.slice(0, -1).map((stage, i) => {
+          {stages.slice(0, -1).map((stage, i) => {
             const isActive = i === currentIdx;
             const isDone = i < currentIdx;
             const isFailed = job?.status === "failed" && i === currentIdx;
@@ -81,7 +77,7 @@ export default function ProcessingPage() {
                       />
                     )}
                   </div>
-                  {i < STAGE_ORDER.length - 2 && (
+                  {i < stages.length - 2 && (
                     <div
                       className={`w-0.5 h-8 transition-colors duration-500 ${
                         isDone ? "bg-sage/40" : "bg-ink-lighter"

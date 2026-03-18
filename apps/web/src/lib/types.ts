@@ -4,6 +4,9 @@ export type DeckSize = "small" | "medium" | "large";
 export type JobStatus =
   | "pending"
   | "classifying"
+  | "fetching_video"
+  | "extracting_transcript"
+  | "analyzing_visuals"
   | "stage_a"
   | "stage_b"
   | "stage_c"
@@ -36,6 +39,7 @@ export interface JobStatusResponse {
   error_message: string | null;
   total_cards: number;
   suppressed_cards: number;
+  source_type?: "file" | "youtube";
 }
 
 export interface CardOut {
@@ -66,6 +70,9 @@ export interface ReviewResponse {
 export const STAGE_LABELS: Record<string, string> = {
   pending: "Queued",
   classifying: "Analyzing Content",
+  fetching_video: "Fetching Video",
+  extracting_transcript: "Extracting Transcript",
+  analyzing_visuals: "Analyzing Visuals",
   stage_a: "Extracting Concepts",
   stage_b: "Merging & Ranking",
   stage_c: "Planning Cards",
@@ -77,7 +84,7 @@ export const STAGE_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-export const STAGE_ORDER: JobStatus[] = [
+export const STAGE_ORDER_DOCUMENT: JobStatus[] = [
   "pending",
   "classifying",
   "stage_a",
@@ -89,3 +96,22 @@ export const STAGE_ORDER: JobStatus[] = [
   "qc",
   "completed",
 ];
+
+export const STAGE_ORDER_YOUTUBE: JobStatus[] = [
+  "pending",
+  "fetching_video",
+  "extracting_transcript",
+  "analyzing_visuals",
+  "classifying",
+  "stage_a",
+  "stage_b",
+  "stage_c",
+  "stage_d",
+  "stage_e",
+  "stage_f",
+  "qc",
+  "completed",
+];
+
+// Keep backward compat — default to document order
+export const STAGE_ORDER = STAGE_ORDER_DOCUMENT;
