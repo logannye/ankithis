@@ -135,6 +135,39 @@ export async function removeSectionFromDeck(
   });
 }
 
+export interface YouTubePreviewResponse {
+  video_id: string;
+  title: string;
+  channel: string;
+  duration_seconds: number;
+  thumbnail_url: string;
+  has_chapters: boolean;
+  chapters: { title: string; start_time: number; end_time?: number }[];
+}
+
+export async function previewYouTube(url: string): Promise<YouTubePreviewResponse> {
+  return apiFetch<YouTubePreviewResponse>("/api/youtube/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+}
+
+export async function uploadYouTube(
+  url: string,
+  options: {
+    study_goal?: string;
+    card_style?: CardStyle;
+    deck_size?: DeckSize;
+  } = {},
+): Promise<UploadResponse> {
+  return apiFetch<UploadResponse>("/api/youtube", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, ...options }),
+  });
+}
+
 export function getExportUrl(documentId: string, format: "csv" | "apkg"): string {
   const token = getToken();
   const base = `${API_BASE}/api/documents/${documentId}/export/${format}`;

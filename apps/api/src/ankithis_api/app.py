@@ -14,6 +14,7 @@ from ankithis_api.routers import (
     review,
     sections,
     upload,
+    youtube,
 )
 
 setup_logging()
@@ -44,3 +45,4 @@ app.include_router(review.router)
 app.include_router(cards.router)
 app.include_router(sections.router)
 app.include_router(regenerate.router)
+app.include_router(youtube.router)
