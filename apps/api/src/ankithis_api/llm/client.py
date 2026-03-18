@@ -66,11 +66,18 @@ def structured_call(
     tool_schema: dict[str, Any],
     max_retries: int = 2,
     model: str | None = None,
+    images: list[bytes] | None = None,
 ) -> dict[str, Any]:
     """Call Kimi K2.5 via Bedrock Converse API and return structured JSON output.
 
     Injects the JSON schema into the prompt and parses the response.
     Retries on transient errors with exponential backoff.
+
+    Parameters
+    ----------
+    images:
+        Optional list of JPEG image bytes for multimodal requests.
+        Each entry becomes an image content block in the Converse message.
     """
     client = get_client()
     model = model or settings.bedrock_model
@@ -79,7 +86,19 @@ def structured_call(
     schema_instruction = _schema_to_prompt(tool_name, tool_schema)
     augmented_user = user + schema_instruction
 
-    messages = [{"role": "user", "content": [{"text": augmented_user}]}]
+    # Build content blocks: images first, then text
+    content_blocks: list[dict[str, Any]] = []
+    if images:
+        for frame_bytes in images:
+            content_blocks.append({
+                "image": {
+                    "format": "jpeg",
+                    "source": {"bytes": frame_bytes},
+                }
+            })
+    content_blocks.append({"text": augmented_user})
+
+    messages = [{"role": "user", "content": content_blocks}]
 
     for attempt in range(max_retries + 1):
         try:

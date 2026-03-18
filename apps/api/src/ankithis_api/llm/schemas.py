@@ -101,6 +101,14 @@ class ClassificationOutput(BaseModel):
     special_considerations: list[str]
 
 
+# Visual Intelligence Assessment
+class VisualAssessmentOutput(BaseModel):
+    visual_density: str  # low, medium, high
+    video_type: str  # talking_head, slides_with_speaker, screencast, etc.
+    frame_information: str  # Description of what the frames contain
+    recommended_sampling: str  # skip, transitions_only, dense
+
+
 def schema_for(model: type[BaseModel]) -> dict:
     """Convert a Pydantic model to a JSON Schema dict for tool_use."""
     return model.model_json_schema()
