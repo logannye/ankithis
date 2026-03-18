@@ -14,15 +14,20 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://ankithis:ankithis@localhost:5432/ankithis"
     redis_url: str = "redis://localhost:6379/0"
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-4-20250514"
-    # Per-stage model overrides (Haiku for bulk, Sonnet for generation, Opus for critique)
-    model_stage_a: str = "claude-haiku-4-5-20251001"  # concept extraction — high volume, simple
-    model_stage_b: str = "claude-haiku-4-5-20251001"  # concept merge — structured comparison
-    model_stage_c: str = "claude-sonnet-4-20250514"  # card planning — pedagogical judgment
-    model_stage_d: str = "claude-sonnet-4-20250514"  # card generation — structured writing
-    model_stage_e: str = "claude-sonnet-4-20250514"  # critique — rubric-based review
-    model_stage_f: str = "claude-haiku-4-5-20251001"  # dedup — simple comparison
+
+    # AWS Bedrock credentials (shared with Galen)
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-west-2"
+
+    # LLM model — Kimi K2.5 via Bedrock Converse API (all stages)
+    bedrock_model: str = "moonshotai.kimi-k2.5"
+    model_stage_a: str = "moonshotai.kimi-k2.5"  # concept extraction
+    model_stage_b: str = "moonshotai.kimi-k2.5"  # concept merge
+    model_stage_c: str = "moonshotai.kimi-k2.5"  # card planning
+    model_stage_d: str = "moonshotai.kimi-k2.5"  # card generation
+    model_stage_e: str = "moonshotai.kimi-k2.5"  # critique
+    model_stage_f: str = "moonshotai.kimi-k2.5"  # dedup
 
     # Storage
     storage_backend: str = "local"  # "local" or "s3"
