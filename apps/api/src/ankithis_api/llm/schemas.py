@@ -88,6 +88,19 @@ class DedupOutput(BaseModel):
     results: list[DedupResult] = Field(description="Dedup decisions for each pair")
 
 
+# Stage 0: Content Classification
+class ClassificationOutput(BaseModel):
+    content_type: str
+    domain: str
+    difficulty: str
+    information_density: str
+    structure_quality: str
+    primary_knowledge_type: str
+    recommended_cloze_ratio: float
+    recommended_qa_ratio: float
+    special_considerations: list[str]
+
+
 def schema_for(model: type[BaseModel]) -> dict:
     """Convert a Pydantic model to a JSON Schema dict for tool_use."""
     return model.model_json_schema()
