@@ -11,25 +11,29 @@ AnkiThis runs an eight-stage adaptive pipeline that adapts to your content type:
 1. **Parse & Structure** — Extracts text from your document or YouTube transcript, detects section boundaries, and splits content into semantically-aligned chunks.
 2. **Content Classification (Stage 0)** — An LLM classifies your content across 6 dimensions: content type, domain, difficulty, information density, structure quality, and knowledge type. This produces a Content Profile that adapts every downstream stage.
 3. **Section Annotation** — Each section is tagged with its pedagogical function (definitions, theory, methodology, examples, etc.) using fast heuristics.
-4. **Concept Extraction** — Profile-aware prompts extract concepts tailored to the content type: claims + evidence for research papers, bullet expansions for lecture slides, prerequisite gaps for personal notes.
-5. **Concept Merge** — Duplicates are merged with content-aware aggressiveness: heavy dedup for slides, light for research papers.
-6. **Card Planning** — Density targets adapt to information density (sparse content gets more cards per word, dense content gets fewer). Card type ratios adjust per section function.
-7. **Card Generation** — Difficulty-aware prompts with 5 embedded pedagogical principles ensure every card tests understanding, not just recognition.
-8. **Quality Control** — AI critique with content-type quality bars (strict for research papers, lenient for personal notes) + deterministic anti-pattern detection (trivia, verbatim, ambiguous cloze, compound questions).
+4. **Concept Extraction** — Profile-aware prompts extract concepts tailored to the content type and knowledge type: claims + evidence for research papers, bullet expansions for lecture slides, procedural steps for tutorials. Concepts are batched (4 chunks per LLM call) for efficiency. Prerequisite relationships between concepts are tracked.
+5. **Concept Merge** — Duplicates are merged with content-aware aggressiveness: heavy dedup for slides, light for research papers. Small sections are batched together to reduce LLM calls.
+6. **Card Planning** — Each card is assigned a Bloom's taxonomy level (remember → create) based on content difficulty and knowledge type. Density targets adapt to information density. Prerequisite concepts are guaranteed cards, and factual content gets bidirectional vocabulary cards (term → definition and definition → term).
+7. **Card Generation** — Bloom's-level-constrained prompts ensure cards test at the right cognitive level: recall for introductory facts, analysis for advanced concepts, evaluation for expert material. Knowledge-type-aware guidance shapes card style (sequence cards for procedures, comparison cards for concepts).
+8. **Quality Control** — AI critique verifies Bloom's level alignment + content-type quality bars (strict for research papers, lenient for personal notes). Two-tier semantic dedup catches both near-identical and paraphrased duplicates using character n-gram + token similarity. Deterministic anti-pattern detection filters trivia, verbatim, ambiguous cloze, and compound questions. Cards are topologically sorted so prerequisites appear first in the deck.
 
 The result is a deck that matches your content, not a one-size-fits-all dump.
 
 ## Features
 
 - **Multi-format support** — PDF, DOCX, TXT, Markdown, and YouTube videos
-- **Adaptive intelligence** — Content classification automatically adjusts the entire pipeline
+- **Adaptive intelligence** — Content classification automatically adjusts the entire pipeline based on content type, difficulty, and knowledge type
+- **Bloom's taxonomy targeting** — Cards are assigned cognitive levels (remember through create) and generation is constrained to match, so advanced content gets analysis/evaluation questions, not just recall
 - **YouTube integration** — Paste a URL, get cards from transcript + visual content
-- **Visual analysis** — For video content, intelligent frame sampling detects when visuals carry information beyond the transcript
+- **Visual analysis** — For video content, scene-detection frame sampling + multimodal LLM analysis extracts information from slides, diagrams, and whiteboard content beyond the transcript
+- **Prerequisite ordering** — Concepts track their dependencies; the exported deck is topologically sorted so foundational cards come first
+- **Bidirectional vocabulary** — Factual and foreign-language content automatically gets reverse cards (definition → term)
+- **Semantic dedup** — Two-tier duplicate detection (character n-gram + token similarity) catches both near-identical and paraphrased duplicates
 - **Configurable generation** — Choose your study goal, card style, and deck size
 - **Two card types** — Cloze deletions for terminology, Q&A for mechanisms and comparisons
-- **Quality pipeline** — AI critique + 5 deterministic anti-pattern filters catch bad cards
-- **Review before export** — Preview cards, remove ones you don't want, regenerate with different settings
-- **Anki-ready export** — Download as `.apkg` (native Anki package) or CSV
+- **Quality pipeline** — AI critique with Bloom's verification + 5 deterministic anti-pattern filters catch bad cards
+- **Review before export** — Preview cards with accurate cloze blank rendering, remove or keep, regenerate with different settings
+- **Styled Anki export** — Download as `.apkg` with custom CSS (light + dark mode) or CSV
 
 ## Adaptive Intelligence
 
@@ -66,7 +70,7 @@ Duration limits: up to 3 hours. Videos over 90 minutes show a warning. Chapter s
 | Card Style | `cloze_heavy`, `qa_heavy`, `balanced` | Preferred card format (treated as a bias, not absolute) |
 | Deck Size | `small`, `medium`, `large` | Card density, adapted by content information density |
 
-Deck size uses adaptive density scaled by content type. A sparse lecture deck on "Fewer" gets 1.5x the base density; a dense research paper on "More" gets 0.6x. Floor: 5 cards, ceiling: 300.
+Deck size uses adaptive density scaled by content type. A sparse lecture deck on "small" gets 1.5x the base density; a dense research paper on "large" gets 0.6x. Floor: 5 cards, ceiling: 300. The content profile's recommended cloze/QA ratio is blended with your card style preference.
 
 ## Tech Stack
 
@@ -169,7 +173,7 @@ ankithis/
 │   │   │       ├── schemas.py         # Pydantic models for all stages
 │   │   │       └── prompts/           # Adaptive prompt templates (stage_0 through stage_f)
 │   │   ├── alembic/            # Database migrations
-│   │   └── tests/              # 134+ unit tests
+│   │   └── tests/              # 147+ unit tests
 │   └── web/                    # Next.js frontend
 │       └── src/
 │           ├── app/            # Pages (upload, processing, review, login)
