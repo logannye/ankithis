@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
+import tempfile
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ankithis_api.auth import get_current_user
+from ankithis_api.config import settings
 from ankithis_api.db import get_db
 from ankithis_api.models.document import Chunk, Document, DocumentOptions, Section
 from ankithis_api.models.enums import (
@@ -19,19 +22,29 @@ from ankithis_api.models.enums import (
     FileType,
 )
 from ankithis_api.models.video_source import VideoSource
+from ankithis_api.services.chunker import chunk_section, get_chunk_params
+from ankithis_api.services.section_annotator import annotate_section
+from ankithis_api.services.youtube.assembler import assemble_chunks
+from ankithis_api.services.youtube.frame_analyzer import analyze_frames
+from ankithis_api.services.youtube.frame_sampler import (
+    detect_scene_changes,
+    sample_frames_at_transitions,
+    sample_frames_uniform,
+)
 from ankithis_api.services.youtube.metadata import extract_video_id, fetch_metadata
+from ankithis_api.services.youtube.sectioner import (
+    section_by_chapters,
+    section_by_topic_shifts,
+)
 from ankithis_api.services.youtube.transcript import (
     extract_transcript,
     transcript_to_text,
     transcript_word_count,
 )
-from ankithis_api.services.youtube.sectioner import (
-    section_by_chapters,
-    section_by_topic_shifts,
+from ankithis_api.services.youtube.visual_assessment import (
+    assess_visuals,
+    download_video,
 )
-from ankithis_api.services.youtube.assembler import assemble_chunks
-from ankithis_api.services.chunker import chunk_section, get_chunk_params
-from ankithis_api.services.section_annotator import annotate_section
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +53,71 @@ router = APIRouter()
 # Duration limits (seconds)
 MAX_DURATION = 3 * 60 * 60  # 3 hours
 WARN_DURATION = 90 * 60  # 90 minutes
+
+
+def _run_visual_analysis(
+    url: str,
+    duration_seconds: int,
+    title: str,
+) -> list[dict] | None:
+    """Run the full visual analysis pipeline.  Best-effort — returns None on any failure.
+
+    Steps:
+    1. Download video once to a temp file.
+    2. Assess visual density via multimodal LLM.
+    3. If assessment recommends analysis, detect scene changes and sample frames.
+    4. Analyze sampled frames for additive visual content.
+    """
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            video_path = Path(tmpdir) / "video.mp4"
+            if not download_video(url, video_path):
+                logger.warning("Visual analysis: video download failed, skipping")
+                return None
+
+            # Step 1 — assess whether the video has useful visual content
+            assessment = assess_visuals(
+                url=url,
+                duration_seconds=duration_seconds,
+                title=title,
+                video_path=video_path,
+            )
+            sampling = assessment.get("recommended_sampling", "skip")
+            logger.info(
+                "Visual assessment for %s: density=%s, type=%s, sampling=%s",
+                title,
+                assessment.get("visual_density"),
+                assessment.get("video_type"),
+                sampling,
+            )
+
+            if sampling == "skip":
+                return None
+
+            # Step 2 — detect scene changes and extract frames
+            timestamps = detect_scene_changes(video_path)
+            if timestamps:
+                frames = sample_frames_at_transitions(video_path, timestamps)
+            else:
+                # Fallback to uniform sampling when scene detection yields nothing
+                frames = sample_frames_uniform(video_path, duration_seconds)
+
+            if not frames:
+                logger.info("Visual analysis: no frames extracted, skipping")
+                return None
+
+            # Step 3 — analyse frames for additive visual content
+            annotations = analyze_frames(frames)
+            logger.info(
+                "Visual analysis complete: %d frames -> %d annotations",
+                len(frames),
+                len(annotations),
+            )
+            return annotations if annotations else None
+
+    except Exception:
+        logger.warning("Visual analysis pipeline failed, continuing without visuals", exc_info=True)
+        return None
 
 
 class YouTubeRequest(BaseModel):
@@ -127,9 +205,7 @@ async def upload_youtube(
         raise HTTPException(status_code=400, detail=str(exc))
 
     if not segments:
-        raise HTTPException(
-            status_code=400, detail="No transcript available for this video"
-        )
+        raise HTTPException(status_code=400, detail="No transcript available for this video")
 
     word_count = transcript_word_count(segments)
 
@@ -151,8 +227,17 @@ async def upload_youtube(
             }
         ]
 
+    # Visual analysis (best-effort — failures fall back to transcript-only)
+    frame_annotations: list[dict] | None = None
+    if settings.youtube_visual_analysis:
+        frame_annotations = _run_visual_analysis(
+            url=req.url,
+            duration_seconds=meta["duration_seconds"],
+            title=meta["title"],
+        )
+
     # Assemble into ParsedSection format
-    assembled = assemble_chunks(sections_data)
+    assembled = assemble_chunks(sections_data, frame_annotations=frame_annotations)
 
     # Create Document record
     document = Document(

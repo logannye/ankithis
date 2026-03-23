@@ -7,7 +7,13 @@ import re
 # Heading patterns -> function
 _HEADING_SIGNALS: list[tuple[str, re.Pattern]] = [
     ("definitions", re.compile(r"defini|glossar|terminolog|vocabulary", re.I)),
-    ("methodology", re.compile(r"method|protocol|procedure|materials and|experimental setup", re.I)),
+    (
+        "methodology",
+        re.compile(
+            r"method|protocol|procedure|materials and|experimental setup",
+            re.I,
+        ),
+    ),
     ("data_results", re.compile(r"result|finding|data|figure|table\b|observation", re.I)),
     ("summary", re.compile(r"summar|conclusion|takeaway|key point|recap|review", re.I)),
     ("examples", re.compile(r"example|case stud|scenario|illustration|exercise", re.I)),
@@ -18,7 +24,13 @@ _HEADING_SIGNALS: list[tuple[str, re.Pattern]] = [
 _BODY_SIGNALS: list[tuple[str, re.Pattern]] = [
     ("definitions", re.compile(r"is defined as|refers to|definition of|meaning of", re.I)),
     ("methodology", re.compile(r"step[s ]?\d|protocol|procedure|the following steps", re.I)),
-    ("data_results", re.compile(r"figure \d|table \d|p\s*[<>]\s*0\.\d|statistically significant", re.I)),
+    (
+        "data_results",
+        re.compile(
+            r"figure \d|table \d|p\s*[<>]\s*0\.\d|statistically significant",
+            re.I,
+        ),
+    ),
     ("summary", re.compile(r"in summary|to summarize|key takeaway|in conclusion", re.I)),
     ("examples", re.compile(r"consider the following|for example|for instance|suppose that", re.I)),
     ("code", re.compile(r"```|def \w+\(|class \w+|function \w+|import \w+", re.I)),

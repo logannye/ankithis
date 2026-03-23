@@ -1,6 +1,7 @@
 from ankithis_api.models.content_profile import ContentProfile
+from ankithis_api.models.document import Chunk, Section
 from ankithis_api.models.video_source import VideoSource
-from ankithis_api.models.document import Section, Chunk
+
 
 def test_content_profile_has_columns():
     cols = {c.name for c in ContentProfile.__table__.columns}
@@ -15,6 +16,7 @@ def test_content_profile_has_columns():
     assert "special_considerations" in cols
     assert "document_id" in cols
 
+
 def test_video_source_has_columns():
     cols = {c.name for c in VideoSource.__table__.columns}
     assert "youtube_url" in cols
@@ -27,9 +29,11 @@ def test_video_source_has_columns():
     assert "chapter_markers" in cols
     assert "document_id" in cols
 
+
 def test_section_has_pedagogical_function():
     cols = {c.name for c in Section.__table__.columns}
     assert "pedagogical_function" in cols
+
 
 def test_chunk_has_visual_context():
     cols = {c.name for c in Chunk.__table__.columns}

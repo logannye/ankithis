@@ -8,19 +8,22 @@ import {
   removeCard,
   removeSectionFromDeck,
   regenerateCards,
-  getExportUrl,
+  downloadExport,
 } from "@/lib/api";
 import { useRequireAuth } from "@/lib/hooks/use-auth";
 import type { ReviewResponse, CardOut, SectionCards } from "@/lib/types";
 
-function renderCloze(text: string): React.ReactNode {
+function renderCloze(
+  text: string,
+  showAnswers: boolean
+): React.ReactNode {
   const parts = text.split(/({{c\d+::.*?}})/g);
   return parts.map((part, i) => {
     const match = part.match(/{{c\d+::(.*?)}}/);
     if (match) {
       return (
-        <span key={i} className="cloze-blank">
-          {match[1]}
+        <span key={i} className="cloze-blank" title={match[1]}>
+          {showAnswers ? match[1] : "[...]"}
         </span>
       );
     }
@@ -31,9 +34,11 @@ function renderCloze(text: string): React.ReactNode {
 function CardItem({
   card,
   onRemove,
+  showAnswers,
 }: {
   card: CardOut;
   onRemove: (id: string) => void;
+  showAnswers: boolean;
 }) {
   const [removing, setRemoving] = useState(false);
 
@@ -66,7 +71,7 @@ function CardItem({
             )}
           </div>
           <p className="text-parchment text-sm leading-relaxed">
-            {card.card_type === "cloze" ? renderCloze(card.front) : card.front}
+            {card.card_type === "cloze" ? renderCloze(card.front, showAnswers) : card.front}
           </p>
           {card.card_type === "basic" && card.back && (
             <p className="text-slate-text text-sm mt-2 pl-3 border-l-2 border-ink-lighter">
@@ -80,7 +85,7 @@ function CardItem({
             onRemove(card.id);
           }}
           disabled={removing}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-coral/10 text-slate-text hover:text-coral flex-shrink-0"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-coral/10 text-slate-text hover:text-coral flex-shrink-0"
           title="Remove card"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -96,10 +101,12 @@ function SectionGroup({
   section,
   onRemoveCard,
   onRemoveSection,
+  showAnswers,
 }: {
   section: SectionCards;
   onRemoveCard: (id: string) => void;
   onRemoveSection: (id: string) => void;
+  showAnswers: boolean;
 }) {
   const activeCards = section.cards.filter((c) => !c.suppressed);
   if (activeCards.length === 0) return null;
@@ -125,7 +132,7 @@ function SectionGroup({
       <div className="space-y-3">
         <AnimatePresence>
           {activeCards.map((card) => (
-            <CardItem key={card.id} card={card} onRemove={onRemoveCard} />
+            <CardItem key={card.id} card={card} onRemove={onRemoveCard} showAnswers={showAnswers} />
           ))}
         </AnimatePresence>
       </div>
@@ -141,6 +148,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
+  const [showAnswers, setShowAnswers] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -176,10 +184,11 @@ export default function ReviewPage() {
           };
         });
       } catch {
-        // Silently fail — card still visible
+        // Revert by reloading
+        load();
       }
     },
-    [],
+    [load],
   );
 
   const handleRemoveSection = useCallback(
@@ -202,10 +211,11 @@ export default function ReviewPage() {
           };
         });
       } catch {
-        // Silently fail
+        // Revert by reloading
+        load();
       }
     },
-    [],
+    [load],
   );
 
   const handleRegenerate = useCallback(async () => {
@@ -274,24 +284,24 @@ export default function ReviewPage() {
           transition={{ duration: 0.4, delay: 0.1 }}
           className="flex flex-wrap gap-3 mb-10"
         >
-          <a
-            href={getExportUrl(data.document_id, "apkg")}
+          <button
+            onClick={() => downloadExport(data.document_id, "apkg")}
             className="inline-flex items-center gap-2 bg-amber text-ink font-semibold px-5 py-2.5 rounded-xl hover:bg-amber-bright transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
             Download APKG
-          </a>
-          <a
-            href={getExportUrl(data.document_id, "csv")}
+          </button>
+          <button
+            onClick={() => downloadExport(data.document_id, "csv")}
             className="inline-flex items-center gap-2 border border-ink-lighter text-parchment font-medium px-5 py-2.5 rounded-xl hover:border-slate-text transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
             Download CSV
-          </a>
+          </button>
           <button
             onClick={handleRegenerate}
             disabled={regenerating}
@@ -301,6 +311,19 @@ export default function ReviewPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M21.015 4.356v4.992" />
             </svg>
             {regenerating ? "Starting..." : "Regenerate"}
+          </button>
+          <button
+            onClick={() => setShowAnswers((prev) => !prev)}
+            className="inline-flex items-center gap-2 border border-ink-lighter text-slate-text-bright font-medium px-5 py-2.5 rounded-xl hover:border-lavender hover:text-lavender transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {showAnswers ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              )}
+            </svg>
+            {showAnswers ? "Hide Answers" : "Show Answers"}
           </button>
         </motion.div>
 
@@ -316,6 +339,7 @@ export default function ReviewPage() {
               section={section}
               onRemoveCard={handleRemoveCard}
               onRemoveSection={handleRemoveSection}
+              showAnswers={showAnswers}
             />
           ))}
         </motion.div>

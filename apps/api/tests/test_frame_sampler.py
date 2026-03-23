@@ -1,13 +1,18 @@
-from ankithis_api.services.youtube.frame_sampler import SCENE_THRESHOLD
 from ankithis_api.services.youtube.frame_analyzer import (
-    FrameAnnotation, FrameAnalysisOutput, BATCH_SIZE,
+    BATCH_SIZE,
+    FrameAnalysisOutput,
+    FrameAnnotation,
 )
+from ankithis_api.services.youtube.frame_sampler import SCENE_THRESHOLD
+
 
 def test_scene_threshold_reasonable():
     assert 0.1 <= SCENE_THRESHOLD <= 0.5
 
+
 def test_batch_size():
     assert BATCH_SIZE == 5
+
 
 def test_frame_annotation_validates():
     ann = FrameAnnotation(
@@ -18,6 +23,7 @@ def test_frame_annotation_validates():
     )
     assert ann.timestamp == 42.5
     assert ann.additive_value == "high"
+
 
 def test_frame_analysis_output_validates():
     data = {

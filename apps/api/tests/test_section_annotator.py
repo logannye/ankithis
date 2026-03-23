@@ -2,7 +2,8 @@ from ankithis_api.services.section_annotator import annotate_section
 
 
 def test_definitions_section():
-    assert annotate_section("Key Definitions", "A receptor is defined as a protein...") == "definitions"
+    result = annotate_section("Key Definitions", "A receptor is defined as a protein...")
+    assert result == "definitions"
 
 
 def test_methodology_section():
@@ -14,7 +15,8 @@ def test_theory_section():
 
 
 def test_examples_section():
-    assert annotate_section("Case Study: Patient X", "Consider the following example...") == "examples"
+    result = annotate_section("Case Study: Patient X", "Consider the following example...")
+    assert result == "examples"
 
 
 def test_data_results_section():
@@ -30,11 +32,13 @@ def test_code_section():
 
 
 def test_enumeration_section():
-    assert annotate_section("Properties of Enzymes", "- High specificity\n- Catalytic efficiency\n- Regulated activity") == "enumeration"
+    body = "- High specificity\n- Catalytic efficiency\n- Regulated activity"
+    assert annotate_section("Properties of Enzymes", body) == "enumeration"
 
 
 def test_unknown_fallback():
-    assert annotate_section("Chapter 4", "The quick brown fox jumps over the lazy dog.") == "unknown"
+    result = annotate_section("Chapter 4", "The quick brown fox jumps over the lazy dog.")
+    assert result == "unknown"
 
 
 def test_none_title():

@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ankithis
-      POSTGRES_PASSWORD: ankithis
-      POSTGRES_DB: ankithis
+      POSTGRES_USER: ${ANKITHIS_DB_USER:-ankithis}
+      POSTGRES_PASSWORD: ${ANKITHIS_DB_PASSWORD:-ankithis}
+      POSTGRES_DB: ${ANKITHIS_DB_NAME:-ankithis}
     ports:
       - "5432:5432"
     volumes:

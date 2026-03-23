@@ -11,6 +11,7 @@ Rules:
 - Prefer specific facts, definitions, relationships, and processes over vague themes
 - Rate importance 1-10: definitions and core mechanisms get 8-10, supporting details get 4-6
 - Include a short source quote from the text that anchors each concept
+- If a concept requires understanding another concept first, list those prerequisites by name
 - Do NOT extract meta-commentary, table of contents items, or bibliographic references
 """
 
@@ -87,6 +88,25 @@ _DIFFICULTY_GUIDANCE: dict[str, str] = {
     ),
 }
 
+_KNOWLEDGE_TYPE_GUIDANCE: dict[str, str] = {
+    "factual": (
+        "This content is primarily factual. Prioritize definitions, data points, "
+        "names, dates, and precise terminology. Each fact is a potential flashcard."
+    ),
+    "conceptual": (
+        "This content is primarily conceptual. Prioritize relationships between ideas, "
+        "mechanisms, cause-and-effect chains, and 'why' explanations."
+    ),
+    "procedural": (
+        "This content is primarily procedural. Prioritize steps, decision points, "
+        "conditions, and 'what happens if you skip step X' consequences."
+    ),
+    "mixed": (
+        "This content mixes factual, conceptual, and procedural knowledge. "
+        "Extract a balanced mix of facts, relationships, and procedures."
+    ),
+}
+
 _SECTION_FUNCTION_GUIDANCE: dict[str, str] = {
     "definitions": "Focus on extracting each term with its precise meaning and one distinguishing example.",
     "theory": "Focus on mechanisms, causal relationships, and the 'why' behind phenomena.",
@@ -103,6 +123,7 @@ def build_system_prompt(
     content_type: str | None = None,
     difficulty: str | None = None,
     pedagogical_function: str | None = None,
+    knowledge_type: str | None = None,
 ) -> str:
     """Build an adapted system prompt for concept extraction."""
     parts = [_BASE_SYSTEM]
@@ -115,6 +136,9 @@ def build_system_prompt(
 
     if pedagogical_function and pedagogical_function in _SECTION_FUNCTION_GUIDANCE:
         parts.append(f"\nSection focus: {_SECTION_FUNCTION_GUIDANCE[pedagogical_function]}")
+
+    if knowledge_type and knowledge_type in _KNOWLEDGE_TYPE_GUIDANCE:
+        parts.append(f"\nKnowledge type: {_KNOWLEDGE_TYPE_GUIDANCE[knowledge_type]}")
 
     return "\n".join(parts)
 

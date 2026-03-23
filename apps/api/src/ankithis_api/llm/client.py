@@ -67,6 +67,7 @@ def structured_call(
     max_retries: int = 2,
     model: str | None = None,
     images: list[bytes] | None = None,
+    max_tokens: int = 4096,
 ) -> dict[str, Any]:
     """Call Kimi K2.5 via Bedrock Converse API and return structured JSON output.
 
@@ -78,6 +79,9 @@ def structured_call(
     images:
         Optional list of JPEG image bytes for multimodal requests.
         Each entry becomes an image content block in the Converse message.
+    max_tokens:
+        Maximum output tokens. Defaults to 4096. Use lower values for
+        stages that return short responses (e.g., classification: 512).
     """
     client = get_client()
     model = model or settings.bedrock_model
@@ -90,12 +94,14 @@ def structured_call(
     content_blocks: list[dict[str, Any]] = []
     if images:
         for frame_bytes in images:
-            content_blocks.append({
-                "image": {
-                    "format": "jpeg",
-                    "source": {"bytes": frame_bytes},
+            content_blocks.append(
+                {
+                    "image": {
+                        "format": "jpeg",
+                        "source": {"bytes": frame_bytes},
+                    }
                 }
-            })
+            )
     content_blocks.append({"text": augmented_user})
 
     messages = [{"role": "user", "content": content_blocks}]
@@ -106,7 +112,7 @@ def structured_call(
                 "modelId": model,
                 "messages": messages,
                 "inferenceConfig": {
-                    "maxTokens": 4096,
+                    "maxTokens": max_tokens,
                     "temperature": 0.3,
                 },
             }
@@ -117,9 +123,7 @@ def structured_call(
 
             # Extract text from response
             text = ""
-            content_blocks = (
-                response.get("output", {}).get("message", {}).get("content", [])
-            )
+            content_blocks = response.get("output", {}).get("message", {}).get("content", [])
             for block in content_blocks:
                 if "text" in block:
                     text += block["text"]
@@ -141,26 +145,20 @@ def structured_call(
         except client.exceptions.ThrottlingException:
             if attempt < max_retries:
                 wait = 2 ** (attempt + 1)
-                logger.warning(
-                    "Bedrock throttled, retrying in %ds (attempt %d)", wait, attempt + 1
-                )
+                logger.warning("Bedrock throttled, retrying in %ds (attempt %d)", wait, attempt + 1)
                 time.sleep(wait)
             else:
                 raise
         except client.exceptions.ModelTimeoutException:
             if attempt < max_retries:
                 wait = 2 ** (attempt + 1)
-                logger.warning(
-                    "Bedrock timeout, retrying in %ds (attempt %d)", wait, attempt + 1
-                )
+                logger.warning("Bedrock timeout, retrying in %ds (attempt %d)", wait, attempt + 1)
                 time.sleep(wait)
             else:
                 raise
         except (json.JSONDecodeError, ValueError) as e:
             if attempt < max_retries:
-                logger.warning(
-                    "JSON parse failed (%s), retrying (attempt %d)", e, attempt + 1
-                )
+                logger.warning("JSON parse failed (%s), retrying (attempt %d)", e, attempt + 1)
                 time.sleep(1)
             else:
                 raise

@@ -5,7 +5,13 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ankithis_api.models.base import Base, TimestampMixin, UUIDMixin
-from ankithis_api.models.enums import CardStyle, DeckSize, DocumentStatus, FileType, PedagogicalFunction
+from ankithis_api.models.enums import (
+    CardStyle,
+    DeckSize,
+    DocumentStatus,
+    FileType,
+    PedagogicalFunction,
+)
 
 
 class Document(Base, UUIDMixin, TimestampMixin):
@@ -70,7 +76,9 @@ class Section(Base, UUIDMixin, TimestampMixin):
     word_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     excluded: Mapped[bool] = mapped_column(default=False, nullable=False)
     pedagogical_function: Mapped[PedagogicalFunction | None] = mapped_column(
-        Enum(PedagogicalFunction, native_enum=False, length=32), nullable=True, default=None,
+        Enum(PedagogicalFunction, native_enum=False, length=32),
+        nullable=True,
+        default=None,
     )
 
     document: Mapped["Document"] = relationship(back_populates="sections")

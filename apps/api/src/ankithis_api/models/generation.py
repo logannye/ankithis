@@ -50,3 +50,6 @@ class CardPlan(Base, UUIDMixin, TimestampMixin):
     card_type: Mapped[str] = mapped_column(String(32), nullable=False)  # cloze or basic
     direction: Mapped[str] = mapped_column(String(256), nullable=False)  # what to test
     priority: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    bloom_level: Mapped[str] = mapped_column(
+        String(32), default="understand", server_default="understand", nullable=False
+    )  # Bloom's taxonomy: remember, understand, apply, analyze, evaluate, create

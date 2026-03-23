@@ -40,6 +40,15 @@ Also check for these anti-patterns:
 - COMPOUND: Card tests two independent questions joined by "and" -> rewrite as separate concepts
 """
 
+_BLOOMS_CRITIQUE_INSTRUCTION = """\
+Bloom's alignment check:
+- If a card's plan specifies bloom_level, verify the generated question matches that level.
+- A card targeting 'analyze' that merely asks 'What is the definition of X?' should get \
+verdict 'rewrite' with guidance to ask a comparison or differentiation question instead.
+- A card targeting 'apply' that only tests recall should be rewritten to present a scenario.
+- A card targeting 'evaluate' should require the learner to judge, not just describe.
+"""
+
 USER_TEMPLATE = """\
 Review these flashcards for quality. Source material is provided for \
 fact-checking.
@@ -55,11 +64,25 @@ text if rewriting.
 """
 
 
-def build_system_prompt(content_type: str | None = None) -> str:
-    """Build an adapted system prompt for card critique."""
+def build_system_prompt(
+    content_type: str | None = None,
+    has_bloom_levels: bool = False,
+) -> str:
+    """Build an adapted system prompt for card critique.
+
+    Parameters
+    ----------
+    content_type:
+        Document content type — selects the quality bar.
+    has_bloom_levels:
+        When ``True``, the Bloom's alignment check is appended so the
+        critique verifies cognitive-level consistency.
+    """
     parts = [_BASE_SYSTEM, _ANTI_PATTERN_INSTRUCTIONS]
     if content_type and content_type in _QUALITY_BAR:
         parts.append(f"\nQuality threshold: {_QUALITY_BAR[content_type]}")
+    if has_bloom_levels:
+        parts.append(_BLOOMS_CRITIQUE_INSTRUCTION)
     return "\n".join(parts)
 
 

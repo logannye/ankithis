@@ -1,5 +1,6 @@
 from ankithis_api.llm.schemas import ClassificationOutput, schema_for
 
+
 def test_classification_output_validates():
     data = {
         "content_type": "research_paper",
@@ -16,6 +17,7 @@ def test_classification_output_validates():
     assert output.content_type == "research_paper"
     assert output.difficulty == "advanced"
     assert output.recommended_cloze_ratio == 0.4
+
 
 def test_classification_schema_has_required_fields():
     schema = schema_for(ClassificationOutput)

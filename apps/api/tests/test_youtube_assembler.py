@@ -1,10 +1,10 @@
+from ankithis_api.services.youtube.assembler import (
+    _split_into_paragraphs,
+    assemble_chunks,
+)
 from ankithis_api.services.youtube.sectioner import (
     section_by_chapters,
     section_by_topic_shifts,
-)
-from ankithis_api.services.youtube.assembler import (
-    assemble_chunks,
-    _split_into_paragraphs,
 )
 
 
@@ -62,11 +62,26 @@ def test_assemble_chunks_basic():
 
 def test_assemble_chunks_with_visual_context():
     sections = [
-        {"title": "Enzymes", "start_time": 60, "end_time": 120, "text": "Enzymes catalyze reactions."},
+        {
+            "title": "Enzymes",
+            "start_time": 60,
+            "end_time": 120,
+            "text": "Enzymes catalyze reactions.",
+        },
     ]
     annotations = [
-        {"timestamp": 70.0, "visual_content": "Diagram of enzyme-substrate complex", "content_type": "diagram", "additive_value": "high"},
-        {"timestamp": 200.0, "visual_content": "Unrelated frame", "content_type": "text_slide", "additive_value": "low"},
+        {
+            "timestamp": 70.0,
+            "visual_content": "Diagram of enzyme-substrate complex",
+            "content_type": "diagram",
+            "additive_value": "high",
+        },
+        {
+            "timestamp": 200.0,
+            "visual_content": "Unrelated frame",
+            "content_type": "text_slide",
+            "additive_value": "low",
+        },
     ]
     result = assemble_chunks(sections, frame_annotations=annotations)
     assert len(result) == 1

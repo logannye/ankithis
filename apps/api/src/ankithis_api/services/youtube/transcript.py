@@ -89,11 +89,13 @@ def _download_subtitles(url: str, auto: bool = False) -> list[dict]:
                 continue
             start_ms = event.get("tStartMs", 0)
             duration_ms = event.get("dDurationMs", 0)
-            segments.append({
-                "start": start_ms / 1000.0,
-                "duration": duration_ms / 1000.0,
-                "text": text,
-            })
+            segments.append(
+                {
+                    "start": start_ms / 1000.0,
+                    "duration": duration_ms / 1000.0,
+                    "text": text,
+                }
+            )
 
     return segments
 

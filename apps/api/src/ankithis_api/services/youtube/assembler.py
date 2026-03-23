@@ -38,8 +38,7 @@ def assemble_chunks(
         section_visuals = [
             ann["visual_content"]
             for ann in annotations
-            if start <= ann.get("timestamp", 0) < end
-            and ann.get("additive_value") != "none"
+            if start <= ann.get("timestamp", 0) < end and ann.get("additive_value") != "none"
         ]
 
         # Build ParsedSection
@@ -70,7 +69,7 @@ def _split_into_paragraphs(text: str, target_words: int = 150) -> list[str]:
         return []
 
     # Split into sentences (rough heuristic)
-    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = re.split(r"(?<=[.!?])\s+", text)
 
     paragraphs = []
     current: list[str] = []

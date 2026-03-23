@@ -1,6 +1,19 @@
 """Stage C: Card Planning — decide how many cards, types, and directions."""
 
-_BASE_SYSTEM = """\
+_BLOOMS_GUIDANCE = """\
+
+Assign a Bloom's taxonomy level (bloom_level) to each card based on content \
+difficulty and knowledge type:
+- remember: Recall facts, definitions, terms (introductory + factual)
+- understand: Explain ideas, interpret meaning (introductory/intermediate + conceptual)
+- apply: Use knowledge in new situations (intermediate + procedural)
+- analyze: Compare, differentiate, examine relationships (advanced + conceptual/mixed)
+- evaluate: Judge, critique, assess (advanced/expert)
+- create: Design, propose, synthesize novel solutions (expert)
+"""
+
+_BASE_SYSTEM = (
+    """\
 You are an expert Anki flashcard designer. Given a set of merged concepts \
 and a target deck size, plan the flashcards to create.
 
@@ -14,11 +27,14 @@ Rules:
 - Each concept should get 1-3 cards depending on complexity
 - High-importance concepts (8-10) get more cards
 - The "direction" field describes exactly what the card tests
+- For definition-type cards (term -> meaning), set direction to "term_to_definition"
 - Prefer cloze for definitions and specific facts
 - Prefer basic for "why" questions, comparisons, and processes
 - Card style preference: {card_style}
 - Target total cards: {target_cards}
 """
+    + _BLOOMS_GUIDANCE
+)
 
 DENSITY_MODIFIERS: dict[str, float] = {
     "sparse": 1.5,

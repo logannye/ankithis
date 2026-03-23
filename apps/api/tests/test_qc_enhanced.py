@@ -9,10 +9,16 @@ def test_trivia_detection():
 
 
 def test_verbatim_detection():
-    source = "The mitochondria is the powerhouse of the cell and produces ATP through oxidative phosphorylation."
+    source = (
+        "The mitochondria is the powerhouse of the cell"
+        " and produces ATP through oxidative phosphorylation."
+    )
     card = {
         "front": "What is the mitochondria?",
-        "back": "The mitochondria is the powerhouse of the cell and produces ATP through oxidative phosphorylation.",
+        "back": (
+            "The mitochondria is the powerhouse of the cell"
+            " and produces ATP through oxidative phosphorylation."
+        ),
         "card_type": "basic",
     }
     reason = _check_card(card, source_text=source)
@@ -50,8 +56,13 @@ def test_missing_context_detection():
 
 def test_good_card_passes():
     card = {
-        "front": "In enzyme kinetics, what does a low Km value indicate about substrate affinity?",
-        "back": "High affinity — the enzyme reaches half-maximal velocity at low substrate concentration.",
+        "front": (
+            "In enzyme kinetics, what does a low Km value indicate about substrate affinity?"
+        ),
+        "back": (
+            "High affinity — the enzyme reaches half-maximal"
+            " velocity at low substrate concentration."
+        ),
         "card_type": "basic",
     }
     reason = _check_card(card)

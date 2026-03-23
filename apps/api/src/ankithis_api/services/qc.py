@@ -31,9 +31,7 @@ _COMPOUND_PATTERN = re.compile(
 )
 
 
-def run_qc(
-    cards: list[dict], *, source_text: str | None = None
-) -> list[dict]:
+def run_qc(cards: list[dict], *, source_text: str | None = None) -> list[dict]:
     """Run deterministic QC filters on cards.
 
     Sets suppressed=True and qc_reason on cards that fail.

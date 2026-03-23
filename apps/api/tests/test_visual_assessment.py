@@ -1,7 +1,8 @@
-from ankithis_api.services.youtube.visual_assessment import (
-    DEFAULT_ASSESSMENT, SAMPLE_FRAME_COUNT,
-)
 from ankithis_api.llm.schemas import VisualAssessmentOutput, schema_for
+from ankithis_api.services.youtube.visual_assessment import (
+    DEFAULT_ASSESSMENT,
+    SAMPLE_FRAME_COUNT,
+)
 
 
 def test_default_assessment_has_all_fields():

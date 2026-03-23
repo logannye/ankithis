@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import logging
+
+from pydantic import BaseModel
 
 from ankithis_api.config import settings
 from ankithis_api.llm.client import structured_call
 from ankithis_api.llm.schemas import schema_for
-
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ def analyze_frames(
         for ts, _ in batch:
             ctx = ""
             if transcript_context and ts in transcript_context:
-                ctx = f" Transcript around this time: \"{transcript_context[ts]}\""
+                ctx = f' Transcript around this time: "{transcript_context[ts]}"'
             descriptions.append(f"- Frame at {ts:.1f}s{ctx}")
 
         user = _USER_TEMPLATE.format(frame_descriptions="\n".join(descriptions))
@@ -102,9 +101,17 @@ def analyze_frames(
                     all_annotations.append(ann.model_dump())
 
         except Exception:
-            logger.warning("Frame analysis batch failed (frames %d-%d)", i, i + len(batch), exc_info=True)
+            logger.warning(
+                "Frame analysis batch failed (frames %d-%d)",
+                i,
+                i + len(batch),
+                exc_info=True,
+            )
             continue
 
-    logger.info("Frame analysis: %d frames analyzed, %d with additive value",
-                len(frames), len(all_annotations))
+    logger.info(
+        "Frame analysis: %d frames analyzed, %d with additive value",
+        len(frames),
+        len(all_annotations),
+    )
     return all_annotations

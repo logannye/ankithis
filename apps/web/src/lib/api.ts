@@ -168,9 +168,23 @@ export async function uploadYouTube(
   });
 }
 
-export function getExportUrl(documentId: string, format: "csv" | "apkg"): string {
+export async function downloadExport(
+  documentId: string,
+  format: "apkg" | "csv",
+): Promise<void> {
   const token = getToken();
-  const base = `${API_BASE}/api/documents/${documentId}/export/${format}`;
-  if (token) return `${base}?token=${encodeURIComponent(token)}`;
-  return base;
+  const res = await fetch(
+    `${API_BASE}/api/documents/${documentId}/export/${format}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+  );
+  if (!res.ok) throw new Error("Export failed");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `deck.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

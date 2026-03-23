@@ -6,16 +6,18 @@ import sqlalchemy as sa
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSON
 
-from ankithis_api.models.base import Base, UUIDMixin, TimestampMixin
-from ankithis_api.models.enums import VisualDensity, VideoType
+from ankithis_api.models.base import Base, TimestampMixin, UUIDMixin
+from ankithis_api.models.enums import VideoType, VisualDensity
 
 
 class VideoSource(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "video_sources"
 
     document_id = sa.Column(
-        sa.UUID, ForeignKey("documents.id", ondelete="CASCADE"),
-        nullable=False, unique=True,
+        sa.UUID,
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
     youtube_url = sa.Column(sa.String(500), nullable=False)
     video_id = sa.Column(sa.String(20), nullable=False)

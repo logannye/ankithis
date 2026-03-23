@@ -1,6 +1,13 @@
 from ankithis_api.models.enums import (
-    ContentType, Difficulty, InformationDensity, StructureQuality,
-    KnowledgeType, PedagogicalFunction, VisualDensity, VideoType, FileType,
+    ContentType,
+    Difficulty,
+    FileType,
+    InformationDensity,
+    KnowledgeType,
+    PedagogicalFunction,
+    StructureQuality,
+    VideoType,
+    VisualDensity,
 )
 
 

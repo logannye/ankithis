@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     rate_limit_uploads: int = 10
     rate_limit_generations: int = 20
 
+    # YouTube visual analysis (requires yt-dlp + ffmpeg)
+    youtube_visual_analysis: bool = True
+
     # CORS
     cors_origins: list[str] = ["http://localhost:3000"]
 

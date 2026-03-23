@@ -29,9 +29,7 @@ def _build_sample(
     sections: list[ParsedSection],
 ) -> tuple[str, str, str]:
     """Extract headings, opening text, and closing text for classification."""
-    headings = "\n".join(
-        f"{'#' * s.level} {s.title}" for s in sections if s.title
-    )
+    headings = "\n".join(f"{'#' * s.level} {s.title}" for s in sections if s.title)
 
     # Opening: first ~2000 words
     all_text = "\n\n".join(s.text for s in sections)
@@ -61,6 +59,7 @@ def _safe_classify(headings: str, opening: str, closing: str) -> dict:
             tool_name="classify_content",
             tool_schema=schema_for(ClassificationOutput),
             model=settings.bedrock_model,
+            max_tokens=512,
         )
         output = ClassificationOutput.model_validate(result)
         return output.model_dump()

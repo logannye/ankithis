@@ -15,6 +15,10 @@ class ExtractedConcept(BaseModel):
     source_quote: str = Field(
         description="A key quote or phrase from the text supporting this concept"
     )
+    prerequisites: list[str] = Field(
+        default_factory=list,
+        description="Names of other concepts this one depends on (must understand those first)",
+    )
 
 
 class ConceptExtractionOutput(BaseModel):
@@ -43,6 +47,13 @@ class PlannedCard(BaseModel):
     card_type: str = Field(description="'cloze' or 'basic'")
     direction: str = Field(description="What specifically this card tests about the concept")
     priority: int = Field(ge=1, le=10, description="How important this card is (1-10)")
+    bloom_level: str = Field(
+        default="understand",
+        description=(
+            "Bloom's taxonomy level: "
+            "'remember', 'understand', 'apply', 'analyze', 'evaluate', or 'create'"
+        ),
+    )
 
 
 class CardPlanOutput(BaseModel):

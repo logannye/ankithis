@@ -48,12 +48,14 @@ def section_by_chapters(
                 chapter_text.append(seg["text"])
 
         if chapter_text:
-            sections.append({
-                "title": ch["title"],
-                "start_time": ch_start,
-                "end_time": ch_end,
-                "text": " ".join(chapter_text),
-            })
+            sections.append(
+                {
+                    "title": ch["title"],
+                    "start_time": ch_start,
+                    "end_time": ch_end,
+                    "text": " ".join(chapter_text),
+                }
+            )
 
     return sections
 
@@ -103,10 +105,7 @@ def section_by_topic_shifts(
     merged_breaks = [breaks[0]]
     for b in breaks[1:]:
         # Count words since last break
-        words = sum(
-            len(segments[j]["text"].split())
-            for j in range(merged_breaks[-1], b)
-        )
+        words = sum(len(segments[j]["text"].split()) for j in range(merged_breaks[-1], b))
         if words >= min_section_words:
             merged_breaks.append(b)
 
@@ -120,12 +119,14 @@ def section_by_topic_shifts(
             continue
 
         text = " ".join(s["text"] for s in section_segments)
-        sections.append({
-            "title": f"Section {idx + 1}",
-            "start_time": section_segments[0]["start"],
-            "end_time": section_segments[-1]["start"] + section_segments[-1]["duration"],
-            "text": text,
-        })
+        sections.append(
+            {
+                "title": f"Section {idx + 1}",
+                "start_time": section_segments[0]["start"],
+                "end_time": section_segments[-1]["start"] + section_segments[-1]["duration"],
+                "text": text,
+            }
+        )
 
     return sections
 
@@ -153,11 +154,13 @@ def _section_by_time(
                 section_text.append(seg["text"])
 
         if section_text:
-            sections.append({
-                "title": f"Part {i + 1}",
-                "start_time": start_t,
-                "end_time": end_t,
-                "text": " ".join(section_text),
-            })
+            sections.append(
+                {
+                    "title": f"Part {i + 1}",
+                    "start_time": start_t,
+                    "end_time": end_t,
+                    "text": " ".join(section_text),
+                }
+            )
 
     return sections

@@ -24,6 +24,80 @@ DEFAULT_ASSESSMENT: dict = {
 SAMPLE_FRAME_COUNT = 6
 
 
+def download_video(url: str, dest: Path) -> bool:
+    """Download a video to *dest* using yt-dlp (lowest quality).
+
+    Returns True on success.
+    """
+    try:
+        subprocess.run(
+            [
+                "yt-dlp",
+                "-f",
+                "worstvideo[ext=mp4]/worst[ext=mp4]/worst",
+                "-o",
+                str(dest),
+                "--quiet",
+                "--no-warnings",
+                url,
+            ],
+            check=True,
+            timeout=120,
+            capture_output=True,
+        )
+        return dest.exists()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        logger.warning("Failed to download video for frame extraction")
+        return False
+
+
+def extract_frames_from_file(
+    video_path: Path,
+    duration_seconds: int,
+    count: int = SAMPLE_FRAME_COUNT,
+) -> list[bytes]:
+    """Extract evenly-spaced sample frames from a local video file.
+
+    Returns list of JPEG image bytes.
+    """
+    if duration_seconds <= 0 or not video_path.exists():
+        return []
+
+    interval = duration_seconds / (count + 1)
+    timestamps = [interval * (i + 1) for i in range(count)]
+
+    frames: list[bytes] = []
+    tmpdir = video_path.parent  # reuse the same temp directory
+    for ts in timestamps:
+        frame_path = tmpdir / f"frame_{ts:.1f}.jpg"
+        try:
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-ss",
+                    f"{ts:.1f}",
+                    "-i",
+                    str(video_path),
+                    "-frames:v",
+                    "1",
+                    "-q:v",
+                    "5",
+                    str(frame_path),
+                    "-y",
+                ],
+                check=True,
+                timeout=30,
+                capture_output=True,
+            )
+            if frame_path.exists():
+                frames.append(frame_path.read_bytes())
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            logger.debug("Failed to extract frame at %.1f", ts)
+            continue
+
+    return frames
+
+
 def extract_sample_frames(
     url: str,
     duration_seconds: int,
@@ -32,78 +106,39 @@ def extract_sample_frames(
     """Extract evenly-spaced sample frames from a video using yt-dlp + ffmpeg.
 
     Returns list of JPEG image bytes.
+    Downloads the video to a temporary directory, then delegates to
+    :func:`extract_frames_from_file`.
     """
     if duration_seconds <= 0:
         return []
 
-    # Calculate timestamps for evenly-spaced frames
-    interval = duration_seconds / (count + 1)
-    timestamps = [interval * (i + 1) for i in range(count)]
-
-    frames: list[bytes] = []
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Download video to temp file (lowest quality to save bandwidth)
         video_path = Path(tmpdir) / "video.mp4"
-        try:
-            subprocess.run(
-                [
-                    "yt-dlp",
-                    "-f", "worstvideo[ext=mp4]/worst[ext=mp4]/worst",
-                    "-o", str(video_path),
-                    "--quiet",
-                    "--no-warnings",
-                    url,
-                ],
-                check=True,
-                timeout=120,
-                capture_output=True,
-            )
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-            logger.warning("Failed to download video for frame extraction")
+        if not download_video(url, video_path):
             return []
-
-        if not video_path.exists():
-            return []
-
-        # Extract frames at each timestamp
-        for ts in timestamps:
-            frame_path = Path(tmpdir) / f"frame_{ts:.1f}.jpg"
-            try:
-                subprocess.run(
-                    [
-                        "ffmpeg",
-                        "-ss", f"{ts:.1f}",
-                        "-i", str(video_path),
-                        "-frames:v", "1",
-                        "-q:v", "5",
-                        str(frame_path),
-                        "-y",
-                    ],
-                    check=True,
-                    timeout=30,
-                    capture_output=True,
-                )
-                if frame_path.exists():
-                    frames.append(frame_path.read_bytes())
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                logger.debug("Failed to extract frame at %.1f", ts)
-                continue
-
-    return frames
+        return extract_frames_from_file(video_path, duration_seconds, count)
 
 
 def assess_visuals(
     url: str,
     duration_seconds: int,
     title: str = "",
+    video_path: Path | None = None,
 ) -> dict:
     """Assess visual information density of a YouTube video.
 
     Samples 6 frames, sends to multimodal LLM for analysis.
     Returns assessment dict. Falls back to DEFAULT_ASSESSMENT on any failure.
+
+    If *video_path* is provided (an already-downloaded local file), frames are
+    extracted directly from it instead of re-downloading the video.
     """
     try:
-        frames = extract_sample_frames(url, duration_seconds)
+        if video_path and video_path.exists():
+            frames = extract_frames_from_file(video_path, duration_seconds)
+        else:
+            frames = extract_sample_frames(url, duration_seconds)
+
         if not frames:
             logger.info("No frames extracted, defaulting to low visual density")
             return dict(DEFAULT_ASSESSMENT)

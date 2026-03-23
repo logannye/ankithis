@@ -45,11 +45,13 @@ def fetch_metadata(url: str) -> dict:
     # Parse chapter markers
     chapters = []
     for ch in info.get("chapters") or []:
-        chapters.append({
-            "title": ch.get("title", ""),
-            "start_time": ch.get("start_time", 0),
-            "end_time": ch.get("end_time"),
-        })
+        chapters.append(
+            {
+                "title": ch.get("title", ""),
+                "start_time": ch.get("start_time", 0),
+                "end_time": ch.get("end_time"),
+            }
+        )
 
     # Check for manual captions
     subtitles = info.get("subtitles") or {}

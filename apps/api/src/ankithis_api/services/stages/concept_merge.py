@@ -36,6 +36,48 @@ def merge_concepts(
         tool_name="merge_concepts",
         tool_schema=schema_for(ConceptMergeOutput),
         model=settings.model_stage_b,
+        max_tokens=2048,
+    )
+    output = ConceptMergeOutput.model_validate(result)
+    return [c.model_dump() for c in output.concepts]
+
+
+def merge_concepts_batch(
+    sections_concepts: list[tuple[str, list[dict]]],
+    study_goal: str = "Master the key concepts",
+    content_type: str | None = None,
+) -> list[dict]:
+    """Merge concepts from multiple sections in a single LLM call.
+
+    sections_concepts: list of (section_title, concepts_list) tuples.
+    Returns flat list of merged concept dicts.
+    """
+    if not sections_concepts:
+        return []
+
+    # Build concatenated section blocks with delimiters
+    section_blocks: list[str] = []
+    for title, concepts in sections_concepts:
+        block = f"--- SECTION: {title} ---\n{json.dumps(concepts, indent=2)}"
+        section_blocks.append(block)
+    all_sections_text = "\n\n".join(section_blocks)
+
+    system = build_system_prompt(content_type=content_type)
+
+    user = (
+        f"Merge duplicate concepts within each section below. "
+        f"The student's study goal is: {study_goal}\n\n"
+        f"{all_sections_text}\n\n"
+        f"Return the merged, deduplicated concept list."
+    )
+
+    result = structured_call(
+        system=system,
+        user=user,
+        tool_name="merge_concepts",
+        tool_schema=schema_for(ConceptMergeOutput),
+        model=settings.model_stage_b,
+        max_tokens=2048,
     )
     output = ConceptMergeOutput.model_validate(result)
     return [c.model_dump() for c in output.concepts]
